@@ -1,0 +1,11 @@
+.venv
+settings.env
+__pycache__
+.github
+
+# Coverage artifacts
+.coverage
+.coverage.*
+coverage.xml
+coverage.json
+.pytest_cache/

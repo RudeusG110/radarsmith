@@ -1,0 +1,8 @@
+.git
+.venv
+dev
+.htmlcov
+.devcontainer
+.vscode
+.coverage
+doc

@@ -1,0 +1,23 @@
+# Same as Black.
+line-length = 140
+indent-width = 4
+
+# Assume Python 3.13
+target-version = "py313"
+
+[lint]
+select = ["ANN", "E", "F", "C", "A", "ISC", "N", "UP", "PT", "B", "D", "I", "S", "TID", "Q", "PL", "FAST"]
+
+ignore = ["A003", "UP047", "D107", "D100", "D101", "D102", "D104", "D105", "D203", "D213", "PLC1901"]
+
+[lint.per-file-ignores]
+
+
+[lint.flake8-bugbear]
+
+
+[format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+skip-magic-trailing-comma = true

@@ -1,0 +1,17 @@
+[project]
+name = "radarsmith"
+version = "0.1.0"
+description = "Forge your own radar."
+authors = [{ name = "Your Name", email = "you@example.com" }]
+license = ""
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.13"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = ["pytest>=9.0.2,<10.0.0", "pytest-cov>=7.0.0,<8.0.0", "ruff (==0.15.22)"]
