@@ -9,3 +9,4 @@ __pycache__
 coverage.xml
 coverage.json
 .pytest_cache/
+doc
