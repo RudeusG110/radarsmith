@@ -25,6 +25,9 @@ RUN addgroup \
     && apk add --no-cache \
     bash \
     git \
+    make \
+    nodejs \
+    npm \
     sudo \
     && python -m pip install \
     "poetry==${POETRY_VERSION}" \

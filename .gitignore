@@ -1,7 +1,11 @@
 .venv
 settings.env
 __pycache__
+
 .github
+.agents
+skills-lock.json
+CONTEXT.md
 
 # Coverage artifacts
 .coverage
@@ -9,4 +13,5 @@ __pycache__
 coverage.xml
 coverage.json
 .pytest_cache/
+
 doc

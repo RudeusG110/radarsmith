@@ -1,7 +1,18 @@
 {
-  "include": ["."],
-  "exclude": ["dev", ".venv", "tmp"],
-  "ignore": [".venv"],
+  "include": [
+    "."
+  ],
+  "exclude": [
+    "dev",
+    ".venv",
+    "tmp"
+  ],
+  "ignore": [
+    ".venv"
+  ],
+  "extraPaths": [
+    "backend"
+  ],
   "stubPath": "",
   "typeCheckingMode": "strict",
   "reportMissingImports": "error",
@@ -10,5 +21,11 @@
   "reportUnknownArgumentType": "information",
   "reportUnnecessaryTypeIgnoreComment": "error",
   "reportIncompatibleMethodOverride": "error",
-  "executionEnvironments": []
+  "executionEnvironments": [
+    {
+      "root": "backend/tests",
+      "reportUnknownMemberType": "none",
+      "reportUnknownVariableType": "none"
+    }
+  ]
 }
