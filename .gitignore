@@ -1,5 +1,6 @@
 .venv
 settings.env
+dev/db.env
 __pycache__
 .ruff_cache
 

@@ -1,5 +1,9 @@
-.PHONY: setup dev test lint format typecheck build \
+.PHONY: setup dev test lint format typecheck build db-up db-down db-reset \
 	fe-setup fe-dev fe-test fe-lint fe-typecheck fe-build
+
+
+COMPOSE_FILE := dev/docker-compose.yml
+COMPOSE := docker compose -f $(COMPOSE_FILE)
 
 # --- Setup ---
 setup:
@@ -21,6 +25,16 @@ format:
 
 typecheck:
 	poetry run pyright
+
+db-up:
+	$(COMPOSE) up -d db
+
+db-down:
+	$(COMPOSE) down
+
+db-reset:
+	$(COMPOSE) down -v
+	$(COMPOSE) up -d db
 
 # --- Frontend ---
 fe-setup:
