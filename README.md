@@ -46,6 +46,8 @@ make setup
 | `make db-up` | Db up |
 | `make db-down` | Db down |
 | `make db-reset` | Db down and up |
+| `make up-schema` | Upgrade schema to head |
+| `make down-schema` | Downgrade schema by one version |
 
 The API health check is served at `GET /api/health`. In development the frontend proxies
 `/api` to the backend on port 8000.

@@ -36,6 +36,12 @@ db-reset:
 	$(COMPOSE) down -v
 	$(COMPOSE) up -d db
 
+up-schema:
+	cd backend && alembic -c alembic/alembic.ini upgrade head
+
+down-schema:
+	cd backend && alembic -c alembic/alembic.ini downgrade -1
+
 # --- Frontend ---
 fe-setup:
 	cd frontend && npm install

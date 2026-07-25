@@ -9,7 +9,7 @@ from sqlalchemy.sql.schema import UniqueConstraint
 class Radar(Base):
     __tablename__ = "radar"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, index=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     purpose: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -29,12 +29,12 @@ class RadarQuadrant(Base):
         UniqueConstraint("radar_id", "name", name="uq_radar_quadrant_name"),
     )
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, index=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
     radar_id: Mapped[str] = mapped_column(String(36), ForeignKey("radar.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     position: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    radar: Mapped["Radar"] = relationship(back_populates="quadrants")
+    radar: Mapped[Radar] = relationship(back_populates="quadrants")
     blips: Mapped[list["RadarBlip"]] = relationship(back_populates="quadrant")
 
 
@@ -45,19 +45,19 @@ class RadarRing(Base):
         UniqueConstraint("radar_id", "name", name="uq_radar_ring_name"),
     )
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, index=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
     radar_id: Mapped[str] = mapped_column(String(36), ForeignKey("radar.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     position: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    radar: Mapped["Radar"] = relationship(back_populates="rings")
+    radar: Mapped[Radar] = relationship(back_populates="rings")
     blips: Mapped[list["RadarBlip"]] = relationship(back_populates="ring")
 
 
 class RadarBlip(Base):
     __tablename__ = "radar_blip"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, index=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
     radar_id: Mapped[str] = mapped_column(String(36), ForeignKey("radar.id", ondelete="CASCADE"), index=True)
     quadrant_id: Mapped[str] = mapped_column(String(36), ForeignKey("radar_quadrant.id", ondelete="CASCADE"), index=True)
     ring_id: Mapped[str] = mapped_column(String(36), ForeignKey("radar_ring.id", ondelete="CASCADE"), index=True)
@@ -66,6 +66,6 @@ class RadarBlip(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    radar: Mapped["Radar"] = relationship(back_populates="blips")
-    quadrant: Mapped["RadarQuadrant"] = relationship(back_populates="blips")
-    ring: Mapped["RadarRing"] = relationship(back_populates="blips")
+    radar: Mapped[Radar] = relationship(back_populates="blips")
+    quadrant: Mapped[RadarQuadrant] = relationship(back_populates="blips")
+    ring: Mapped[RadarRing] = relationship(back_populates="blips")
