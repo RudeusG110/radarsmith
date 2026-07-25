@@ -1,0 +1,29 @@
+# Local development database only.
+# FastAPI and Vite run on the HOST (see `make dev`), not in Compose,
+# so hot reload keeps working. This file exists purely to give you a
+# pinned, disposable PostgreSQL to develop and test against.
+
+services:
+  db:
+    image: postgres:18
+    container_name: radarsmith_db
+    # Publish the container port to the host so host-side FastAPI and
+    # pytest can connect at localhost:5432. Format is "HOST:CONTAINER".
+    ports:
+      - "5432:5432"
+    # Development-only credentials, kept out of git (see dev/db.env).
+    env_file:
+      - db.env
+    # Named volume => data survives `db-down`; `db-reset` (down -v) wipes it.
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Postgres is not a web server: ask Postgres itself if it is ready.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

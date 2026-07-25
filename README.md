@@ -43,6 +43,9 @@ make setup
 | `make fe-lint` | Run ESLint |
 | `make fe-typecheck` | Run the TypeScript compiler in check-only mode |
 | `make build` | Build the production frontend bundle |
+| `make db-up` | Db up |
+| `make db-down` | Db down |
+| `make db-reset` | Db down and up |
 
 The API health check is served at `GET /api/health`. In development the frontend proxies
 `/api` to the backend on port 8000.
