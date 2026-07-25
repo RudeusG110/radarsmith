@@ -1,17 +1,15 @@
 .venv
 settings.env
 __pycache__
+.ruff_cache
 
 .github
 .agents
 skills-lock.json
 CONTEXT.md
 
-# Coverage artifacts
 .coverage
 .coverage.*
 coverage.xml
 coverage.json
 .pytest_cache/
-
-doc
