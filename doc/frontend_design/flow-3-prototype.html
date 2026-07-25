@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RadarSmith — Flow 3 Prototype (Sidebar + Canvas/Inspector)</title>
+    <style>
+        :root {
+            --bg: #0f1419;
+            --panel: #1a212b;
+            --panel-2: #222b37;
+            --border: #2d3846;
+            --text: #e6edf3;
+            --muted: #9aa7b4;
+            --accent: #4c8dff;
+            --accent-soft: #23344f;
+            --danger: #ef4b5b;
+            --ring-adopt: #3fb950;
+            --ring-trial: #58a6ff;
+            --ring-assess: #d29922;
+            --ring-caution: #f85149;
+            --radius: 10px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        a {
+            color: var(--accent);
+        }
+
+        .app {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            grid-template-rows: 100vh;
+        }
+
+        /* ---------- Sidebar (persistent navigation) ---------- */
+        aside.sidebar {
+            background: var(--panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .sb-brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 18px;
+            font-weight: 700;
+            font-size: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sb-brand .logo {
+            color: var(--accent);
+            font-size: 18px;
+        }
+
+        .sb-head {
+            display: flex;
+            align-items: center;
+            padding: 14px 16px 8px;
+        }
+
+        .sb-head .t {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .sb-head .spacer {
+            flex: 1;
+        }
+
+        .sb-new {
+            background: var(--accent);
+            border: 0;
+            color: #fff;
+            font-size: 18px;
+            line-height: 1;
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+        }
+
+        .sb-list {
+            overflow-y: auto;
+            padding: 4px 8px 12px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .sb-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 2px;
+        }
+
+        .sb-item:hover {
+            background: var(--panel-2);
+        }
+
+        .sb-item.active {
+            background: var(--accent-soft);
+        }
+
+        .sb-item .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            flex: 0 0 auto;
+            opacity: 0;
+        }
+
+        .sb-item.active .dot {
+            opacity: 1;
+        }
+
+        .sb-item .sb-name {
+            font-weight: 600;
+            font-size: 14px;
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .sb-item .sb-count {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .sb-item .tag {
+            font-size: 9px;
+            padding: 1px 5px;
+        }
+
+        .sb-item .sb-del {
+            opacity: 0;
+            background: none;
+            border: 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .sb-item:hover .sb-del {
+            opacity: 1;
+        }
+
+        .sb-item .sb-del:hover {
+            color: var(--danger);
+        }
+
+        .tag {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            color: var(--accent);
+            background: var(--accent-soft);
+            border: 1px solid #34507d;
+            padding: 2px 8px;
+            border-radius: 999px;
+        }
+
+        /* ---------- Main / workspace ---------- */
+        main.main {
+            min-width: 0;
+            min-height: 0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ws-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 22px;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: var(--bg);
+            z-index: 4;
+        }
+
+        .ws-top h1 {
+            margin: 0;
+            font-size: 19px;
+        }
+
+        .ws-top .subtle {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .ws-top .spacer {
+            flex: 1;
+        }
+
+        .btn {
+            border: 1px solid var(--border);
+            background: var(--panel-2);
+            color: var(--text);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+        }
+
+        .btn.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .btn.ghost {
+            background: none;
+        }
+
+        .btn.small {
+            padding: 5px 10px;
+            font-size: 13px;
+        }
+
+        .icon-btn {
+            background: none;
+            border: 0;
+            color: var(--muted);
+            font-size: 15px;
+            padding: 6px;
+            border-radius: 6px;
+        }
+
+        .icon-btn:hover {
+            color: var(--danger);
+        }
+
+        /* radar-hero + inspector layout */
+        .ws-body {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 0;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .canvas-zone {
+            padding: 26px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .canvas-zone svg.radar {
+            max-width: 560px;
+            width: 100%;
+        }
+
+        .marker {
+            cursor: pointer;
+        }
+
+        .marker text {
+            font-size: 11px;
+            font-weight: 700;
+            fill: #fff;
+            pointer-events: none;
+        }
+
+        .marker.selected circle {
+            stroke: #fff;
+            stroke-width: 3px;
+        }
+
+        .quad-label {
+            fill: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .ring-label {
+            fill: var(--muted);
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+        }
+
+        /* collapsible blips strip under canvas */
+        .blips-strip {
+            width: 100%;
+            max-width: 560px;
+            margin-top: 18px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--panel);
+        }
+
+        .blips-strip .bs-head {
+            display: flex;
+            align-items: center;
+            padding: 10px 14px;
+            cursor: pointer;
+        }
+
+        .blips-strip .bs-head .t {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .blips-strip .bs-head .spacer {
+            flex: 1;
+        }
+
+        .bs-body {
+            max-height: 220px;
+            overflow-y: auto;
+            border-top: 1px solid var(--border);
+        }
+
+        .bs-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 14px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .bs-row:hover {
+            background: var(--panel-2);
+        }
+
+        .bs-row.selected {
+            background: var(--accent-soft);
+        }
+
+        .bs-row .num {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #fff;
+            flex: 0 0 auto;
+        }
+
+        .bs-row .bs-name {
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .bs-row .bs-place {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        /* Inspector (right panel, persistent) */
+        .inspector {
+            border-left: 1px solid var(--border);
+            background: var(--panel);
+            padding: 18px;
+            overflow-y: auto;
+        }
+
+        .inspector .ins-empty {
+            color: var(--muted);
+            font-size: 14px;
+            text-align: center;
+            padding: 40px 10px;
+        }
+
+        .inspector h2 {
+            margin: 0 0 2px;
+            font-size: 16px;
+        }
+
+        .inspector .ins-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--muted);
+            font-weight: 700;
+            margin-bottom: 14px;
+        }
+
+        .field {
+            margin-bottom: 12px;
+        }
+
+        .field label {
+            display: block;
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .field input,
+        .field textarea,
+        .field select {
+            width: 100%;
+            background: var(--panel-2);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .field textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .field-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .field-row .field {
+            flex: 1;
+        }
+
+        .ins-note {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: -6px;
+            margin-bottom: 12px;
+        }
+
+        .ins-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .saving {
+            font-size: 11px;
+            color: var(--accent);
+        }
+
+        .dialog-scrim {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .55);
+            z-index: 20;
+            display: none;
+        }
+
+        .dialog-scrim.open {
+            display: block;
+        }
+
+        .dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            z-index: 22;
+            width: 420px;
+            max-width: 92vw;
+            padding: 20px;
+            display: none;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .dialog.open {
+            display: flex;
+        }
+
+        .dialog h2 {
+            margin: 0;
+            font-size: 17px;
+        }
+
+        .dialog p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .dialog .field input {}
+
+        .dialog-actions,
+        .dialog-head {
+            display: flex;
+        }
+
+        .dialog-actions {
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        .dialog-head {
+            align-items: center;
+        }
+
+        .dialog-head .spacer {
+            flex: 1;
+        }
+
+        .x {
+            background: none;
+            border: 0;
+            color: var(--muted);
+            font-size: 18px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 900px) {
+            .app {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+
+            aside.sidebar {
+                border-right: 0;
+                border-bottom: 1px solid var(--border);
+                max-height: 40vh;
+            }
+
+            .ws-body {
+                grid-template-columns: 1fr;
+            }
+
+            .inspector {
+                border-left: 0;
+                border-top: 1px solid var(--border);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="sb-brand"><span class="logo">◤</span> RadarSmith</div>
+            <div class="sb-head"><span class="t">Radars</span><span class="spacer"></span>
+                <button class="sb-new" title="New radar" onclick="openCreate()">+</button>
+            </div>
+            <div class="sb-list" id="sbList"></div>
+        </aside>
+        <main class="main" id="main"></main>
+    </div>
+
+    <!-- Create radar dialog -->
+    <div class="dialog-scrim" id="createScrim" onclick="closeCreate()"></div>
+    <div class="dialog" id="createDialog" role="dialog" aria-modal="true">
+        <div class="dialog-head">
+            <h2>New radar</h2>
+            <div class="spacer"></div><button class="x" onclick="closeCreate()">✕</button>
+        </div>
+        <div class="field"><label for="newName">Name *</label><input id="newName" placeholder="e.g. Mobile Radar" />
+        </div>
+        <div class="field"><label for="newPurpose">Purpose (optional)</label><input id="newPurpose"
+                placeholder="What stance does this radar express?" /></div>
+        <div class="dialog-actions"><button class="btn ghost" onclick="closeCreate()">Cancel</button><button
+                class="btn primary" onclick="submitCreate()">Create radar</button></div>
+    </div>
+
+    <!-- Confirm delete dialog -->
+    <div class="dialog-scrim" id="confirmScrim" onclick="closeConfirm()"></div>
+    <div class="dialog" id="confirmDialog" role="alertdialog" aria-modal="true">
+        <div class="dialog-head">
+            <h2 id="confirmTitle">Delete radar?</h2>
+            <div class="spacer"></div><button class="x" onclick="closeConfirm()">✕</button>
+        </div>
+        <p id="confirmBody"></p>
+        <div class="dialog-actions"><button class="btn ghost" onclick="closeConfirm()">Cancel</button><button
+                class="btn danger" id="confirmBtn"
+                style="background:var(--danger);border-color:var(--danger);color:#fff">Delete</button></div>
+    </div>
+
+    <script src="./prototype-shared.js"></script>
+    <script>
+        /* ============================================================
+           FLOW 3 — PERSISTENT SIDEBAR + CANVAS/INSPECTOR
+           No separate library page: the sidebar IS navigation.
+           Workspace is radar-hero (big canvas) with a right Inspector
+           panel for editing (instead of a table-first split + drawer).
+           ============================================================ */
+        let selectedRadarId = radars[0] ? radars[0].id : null;
+        let stripOpen = true;
+        let inspectorMode = "none"; // none | view | edit | new
+
+        function currentRadar() { return radars.find(r => r.id === selectedRadarId); }
+        function goWorkspace(id) { selectedRadarId = id; selectedBlipId = null; inspectorMode = "none"; render(); }
+        function goHome() { selectedRadarId = radars[0] ? radars[0].id : null; selectedBlipId = null; render(); }
+
+        function render() { renderSidebar(); renderMain(); }
+
+        function renderSidebar() {
+            const list = $("sbList");
+            list.innerHTML = radars.map(r => `
+    <div class="sb-item ${r.id === selectedRadarId ? 'active' : ''}" onclick="goWorkspace('${r.id}')">
+      <span class="dot"></span>
+      <span class="sb-name">${escapeHtml(r.name)}</span>
+      ${r.bundled ? '<span class="tag">start</span>' : ''}
+      <span class="sb-count">${r.blips.length}</span>
+      <button class="sb-del" title="Delete radar" onclick="event.stopPropagation(); askDeleteRadar('${r.id}')">🗑</button>
+    </div>`).join("") || `<div style="color:var(--muted);font-size:13px;padding:12px">No radars yet.</div>`;
+        }
+
+        function renderMain() {
+            const radar = currentRadar();
+            const main = $("main");
+            if (!radar) {
+                main.innerHTML = `<div style="margin:auto;text-align:center;color:var(--muted)">
+      <div style="font-size:15px">Pick a radar on the left, or create one.</div>
+      <button class="btn primary" style="margin-top:14px" onclick="openCreate()">+ New Radar</button></div>`;
+                return;
+            }
+            main.innerHTML = `
+    <div class="ws-top">
+      <h1>${escapeHtml(radar.name)}</h1>
+      <span class="subtle">${escapeHtml(radar.purpose || "")}</span>
+      <span class="spacer"></span>
+      <button class="btn primary" onclick="startNewBlip()">+ Add Blip</button>
+    </div>
+    <div class="ws-body">
+      <div class="canvas-zone">
+        ${renderRadar(radar, 560)}
+        <div class="blips-strip">
+          <div class="bs-head" onclick="toggleStrip()">
+            <span class="t">All blips (${radar.blips.length})</span><span class="spacer"></span>
+            <span class="subtle" style="color:var(--muted);font-size:12px">${stripOpen ? '▲ hide' : '▼ show'}</span>
+          </div>
+          ${stripOpen ? `<div class="bs-body">${renderStrip(radar)}</div>` : ""}
+        </div>
+      </div>
+      <div class="inspector">${renderInspector(radar)}</div>
+    </div>`;
+        }
+
+        function renderStrip(radar) {
+            if (radar.blips.length === 0) return `<div style="padding:16px;color:var(--muted);font-size:13px">No blips yet — add one to place it on the radar.</div>`;
+            return radar.blips.map((b, i) => `
+    <div class="bs-row ${b.id === selectedBlipId ? 'selected' : ''}" onclick="selectBlip('${b.id}')">
+      <span class="num" style="background:${RING_COLORS[b.r]}">${i + 1}</span>
+      <span class="bs-name">${escapeHtml(b.name)}</span>
+      <span class="bs-place">${QUADRANTS[b.q]} · ${RINGS[b.r]}</span>
+    </div>`).join("");
+        }
+
+        /* Inspector = the editing surface (replaces the drawer of Flow 1/2) */
+        function renderInspector(radar) {
+            if (inspectorMode === "none" && !selectedBlipId) {
+                return `<div class="ins-empty">Select a marker or blip to inspect and edit it here.<br><br>Or use <strong>+ Add Blip</strong> to create one.</div>`;
+            }
+            if (inspectorMode === "new") {
+                return inspectorForm({ name: "", desc: "", q: 0, r: 0 }, "New blip", true);
+            }
+            const b = radar.blips.find(x => x.id === selectedBlipId);
+            if (!b) return `<div class="ins-empty">Select a blip to inspect it.</div>`;
+            return inspectorForm(b, "Inspect · Edit", false);
+        }
+
+        function inspectorForm(b, title, isNew) {
+            return `
+    <div class="ins-title">${title}</div>
+    <div class="field"><label for="iName">Name *</label><input id="iName" value="${escapeHtml(b.name)}" /></div>
+    <div class="field"><label for="iDesc">Description *</label><textarea id="iDesc">${escapeHtml(b.desc)}</textarea></div>
+    <div class="ins-note">Name &amp; description save when you press Save.</div>
+    <div class="field-row">
+      <div class="field"><label for="iQuad">Quadrant</label>
+        <select id="iQuad" ${isNew ? "" : `onchange="inspectPlacement('q',this)"`}>
+          ${QUADRANTS.map((q, i) => `<option value="${i}" ${i === b.q ? 'selected' : ''}>${q}</option>`).join("")}</select></div>
+      <div class="field"><label for="iRing">Ring</label>
+        <select id="iRing" ${isNew ? "" : `onchange="inspectPlacement('r',this)"`}>
+          ${RINGS.map((r, i) => `<option value="${i}" ${i === b.r ? 'selected' : ''}>${r}</option>`).join("")}</select></div>
+    </div>
+    ${isNew ? "" : `<div class="ins-note">Quadrant &amp; ring save immediately. <span id="insSaving" class="saving hidden">saving…</span></div>`}
+    <div class="ins-actions">
+      <button class="btn primary" onclick="${isNew ? "saveNewBlip()" : "saveInspectorEdit()"}">Save</button>
+      ${isNew
+                    ? `<button class="btn ghost" onclick="cancelInspector()">Cancel</button>`
+                    : `<button class="btn ghost" onclick="askDeleteBlip('${b.id}')">Delete</button>`}
+    </div>`;
+        }
+
+        /* ---- inspector interactions ---- */
+        function toggleStrip() { stripOpen = !stripOpen; render(); }
+        function startNewBlip() { inspectorMode = "new"; selectedBlipId = null; render(); setTimeout(() => { const el = $("iName"); if (el) el.focus(); }, 40); }
+        function cancelInspector() { inspectorMode = "none"; render(); }
+
+        function saveNewBlip() {
+            const radar = currentRadar();
+            const name = $("iName").value.trim(), desc = $("iDesc").value.trim();
+            if (!name || !desc) { alert("Name and description are required."); return; }
+            const id = "b-" + Date.now();
+            radar.blips.push({ id, name, desc, q: parseInt($("iQuad").value, 10), r: parseInt($("iRing").value, 10) });
+            selectedBlipId = id; inspectorMode = "view"; render();
+        }
+        function saveInspectorEdit() {
+            const radar = currentRadar();
+            const b = radar.blips.find(x => x.id === selectedBlipId);
+            const name = $("iName").value.trim(), desc = $("iDesc").value.trim();
+            if (!name || !desc) { alert("Name and description are required."); return; }
+            b.name = name; b.desc = desc; render();
+        }
+        function inspectPlacement(dim, sel) {
+            const radar = currentRadar();
+            const b = radar.blips.find(x => x.id === selectedBlipId);
+            const badge = $("insSaving"); if (badge) badge.classList.remove("hidden");
+            setTimeout(() => { if (dim === "q") b.q = parseInt(sel.value, 10); else b.r = parseInt(sel.value, 10); render(); }, 350);
+        }
+
+        /* override shared selectBlip so selecting shows the inspector in view/edit mode */
+        function selectBlip(id) {
+            selectedBlipId = (selectedBlipId === id ? null : id);
+            inspectorMode = selectedBlipId ? "view" : "none";
+            render();
+        }
+
+        render();
+    </script>
+</body>
+
+</html>

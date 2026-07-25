@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RadarSmith — Flow 2 Prototype (Home dashboard-first)</title>
+<style>
+  :root {
+    --bg: #0f1419; --panel: #1a212b; --panel-2: #222b37; --border: #2d3846;
+    --text: #e6edf3; --muted: #9aa7b4; --accent: #4c8dff; --accent-soft: #23344f;
+    --danger: #ef4b5b; --ring-adopt: #3fb950; --ring-trial: #58a6ff;
+    --ring-assess: #d29922; --ring-caution: #f85149; --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+  button { font-family: inherit; cursor: pointer; }
+  a { color: var(--accent); }
+
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+  header.topbar { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--panel); position: sticky; top: 0; z-index: 5; }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; background: none; border: 0; color: var(--text); font-size: 16px; }
+  .brand .logo { color: var(--accent); font-size: 18px; }
+  .navlinks { display: flex; gap: 4px; margin-left: 12px; }
+  .navlinks button { background: none; border: 0; color: var(--muted); font-size: 14px; padding: 6px 10px; border-radius: 6px; font-weight: 600; }
+  .navlinks button.active { color: var(--text); background: var(--accent-soft); }
+  .navlinks button:hover { color: var(--text); }
+  .spacer { flex: 1; }
+
+  .btn { border: 1px solid var(--border); background: var(--panel-2); color: var(--text); padding: 8px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .btn.ghost { background: none; }
+  .btn.small { padding: 5px 10px; font-size: 13px; }
+  .btn.big { padding: 11px 20px; font-size: 15px; }
+  .icon-btn { background: none; border: 0; color: var(--muted); font-size: 15px; padding: 6px; border-radius: 6px; }
+  .icon-btn:hover { color: var(--danger); background: var(--panel-2); }
+
+  main.content { flex: 1; padding: 24px 20px; max-width: 1200px; width: 100%; margin: 0 auto; }
+  h1.page-title { font-size: 22px; margin: 0 0 4px; }
+  .subtle { color: var(--muted); font-size: 14px; }
+
+  /* ---------- HOME / DASHBOARD ---------- */
+  .welcome { font-size: 26px; font-weight: 700; margin: 6px 0 2px; }
+  .welcome-sub { color: var(--muted); margin-bottom: 24px; }
+  .hero {
+    display: grid; grid-template-columns: 260px 1fr; gap: 22px; align-items: center;
+    background: linear-gradient(135deg, var(--panel) 0%, #182236 100%);
+    border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin-bottom: 26px;
+  }
+  .hero .thumb { background: #111820; border: 1px solid var(--border); border-radius: 12px; padding: 10px; }
+  .hero .hero-body .eyebrow { color: var(--accent); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; }
+  .hero .hero-body h2 { margin: 6px 0 6px; font-size: 22px; }
+  .hero .hero-body p { color: var(--muted); margin: 0 0 16px; }
+  .hero .hero-actions { display: flex; gap: 10px; }
+
+  .quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 30px; }
+  .quick-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; cursor: pointer; transition: border-color .12s, transform .06s; }
+  .quick-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .quick-card .qc-icon { font-size: 22px; }
+  .quick-card .qc-title { font-weight: 700; margin: 8px 0 3px; }
+  .quick-card .qc-sub { color: var(--muted); font-size: 13px; }
+
+  .section-title { font-size: 14px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); font-weight: 700; margin: 0 0 12px; }
+  .recent-list { display: flex; flex-direction: column; gap: 10px; }
+  .recent-row { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; }
+  .recent-row:hover { border-color: var(--accent); }
+  .recent-row .rr-name { font-weight: 600; }
+  .recent-row .rr-purpose { color: var(--muted); font-size: 13px; }
+  .recent-row .rr-meta { color: var(--muted); font-size: 13px; margin-left: auto; }
+  .tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--accent); background: var(--accent-soft); border: 1px solid #34507d; padding: 2px 8px; border-radius: 999px; }
+
+  /* ---------- LIBRARY ---------- */
+  .lib-head { display: flex; align-items: flex-end; margin-bottom: 18px; }
+  .radar-list { display: flex; flex-direction: column; gap: 12px; }
+  .radar-card { display: flex; align-items: center; gap: 16px; padding: 16px 18px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: border-color .12s, transform .06s; }
+  .radar-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .radar-card .info { flex: 1; min-width: 0; }
+  .radar-card .name { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 10px; }
+  .radar-card .purpose { color: var(--muted); font-size: 13px; margin-top: 3px; }
+  .radar-card .meta { color: var(--muted); font-size: 13px; white-space: nowrap; }
+
+  /* ---------- WORKSPACE (same table-first split as Flow 1) ---------- */
+  .ws-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .ws-head h1 { font-size: 20px; margin: 0; }
+  .ws-head .edit-name { background: none; border: 0; color: var(--muted); font-size: 14px; }
+  .tabs { display: none; gap: 6px; margin-bottom: 14px; }
+  .tab { flex: 1; padding: 9px; text-align: center; border: 1px solid var(--border); background: var(--panel); color: var(--muted); border-radius: 8px; font-weight: 600; font-size: 14px; }
+  .tab.active { background: var(--accent-soft); color: var(--text); border-color: var(--accent); }
+  .ws-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; align-items: start; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); }
+  .panel .panel-title { padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+  table.blips { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.blips th { text-align: left; padding: 10px 14px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .4px; border-bottom: 1px solid var(--border); }
+  table.blips td { padding: 9px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  table.blips tr { cursor: pointer; }
+  table.blips tbody tr:hover { background: var(--panel-2); }
+  table.blips tr.selected { background: var(--accent-soft); }
+  table.blips tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+  .blip-name { font-weight: 600; }
+  select.cell { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; font-size: 13px; font-family: inherit; }
+  .saving { font-size: 11px; color: var(--accent); margin-left: 6px; }
+  .radar-wrap { padding: 14px; position: sticky; top: 76px; }
+  svg.radar { width: 100%; height: auto; display: block; }
+  .marker { cursor: pointer; }
+  .marker text { font-size: 11px; font-weight: 700; fill: #fff; pointer-events: none; }
+  .marker.selected circle { stroke: #fff; stroke-width: 3px; }
+  .quad-label { fill: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+  .ring-label { fill: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: .4px; }
+  .detailbar { margin-top: 18px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); display: flex; align-items: center; gap: 14px; }
+  .detailbar .d-name { font-weight: 700; }
+  .detailbar .d-place { color: var(--muted); font-size: 13px; }
+  .detailbar .d-desc { color: var(--muted); font-size: 13px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detailbar.empty { color: var(--muted); font-size: 13px; justify-content: center; }
+
+  /* dialogs / drawer (shared) */
+  .drawer-scrim, .dialog-scrim { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 20; display: none; }
+  .drawer-scrim.open, .dialog-scrim.open { display: block; }
+  .drawer { position: fixed; top: 0; right: 0; height: 100%; width: 380px; max-width: 92vw; background: var(--panel); border-left: 1px solid var(--border); z-index: 21; transform: translateX(100%); transition: transform .18s ease; padding: 20px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+  .drawer.open { transform: translateX(0); }
+  .drawer h2 { margin: 0; font-size: 17px; }
+  .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 5px; font-weight: 600; }
+  .field input, .field textarea, .field select { width: 100%; background: var(--panel-2); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; font-size: 14px; font-family: inherit; }
+  .field textarea { min-height: 84px; resize: vertical; }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field { flex: 1; }
+  .drawer-actions { margin-top: auto; display: flex; justify-content: flex-end; gap: 10px; }
+  .dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--panel); border: 1px solid var(--border); border-radius: 12px; z-index: 22; width: 420px; max-width: 92vw; padding: 20px; display: none; flex-direction: column; gap: 14px; }
+  .dialog.open { display: flex; }
+  .dialog h2 { margin: 0; font-size: 17px; }
+  .dialog p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+  .dialog-actions, .dialog-head { display: flex; }
+  .dialog-actions { justify-content: flex-end; gap: 10px; margin-top: 4px; }
+  .dialog-head { align-items: center; }
+  .dialog-head .spacer { flex: 1; }
+  .x { background: none; border: 0; color: var(--muted); font-size: 18px; }
+  .hidden { display: none !important; }
+
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; }
+    .quick-grid { grid-template-columns: 1fr; }
+    .tabs { display: flex; }
+    .ws-grid { grid-template-columns: 1fr; }
+    .ws-grid.show-radar .table-panel { display: none; }
+    .ws-grid.show-table .radar-panel { display: none; }
+    .radar-wrap { position: static; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <button class="brand" onclick="goHome()"><span class="logo">◤</span> RadarSmith</button>
+    <div class="navlinks" id="navlinks"></div>
+    <div class="spacer"></div>
+    <div id="topActions"></div>
+  </header>
+  <main class="content" id="view"></main>
+</div>
+
+<!-- Create radar dialog -->
+<div class="dialog-scrim" id="createScrim" onclick="closeCreate()"></div>
+<div class="dialog" id="createDialog" role="dialog" aria-modal="true">
+  <div class="dialog-head"><h2>New radar</h2><div class="spacer"></div><button class="x" onclick="closeCreate()">✕</button></div>
+  <div class="field"><label for="newName">Name *</label><input id="newName" placeholder="e.g. Mobile Radar" /></div>
+  <div class="field"><label for="newPurpose">Purpose (optional)</label><input id="newPurpose" placeholder="What stance does this radar express?" /></div>
+  <div class="dialog-actions"><button class="btn ghost" onclick="closeCreate()">Cancel</button><button class="btn primary" onclick="submitCreate()">Create radar</button></div>
+</div>
+
+<!-- Confirm delete dialog -->
+<div class="dialog-scrim" id="confirmScrim" onclick="closeConfirm()"></div>
+<div class="dialog" id="confirmDialog" role="alertdialog" aria-modal="true">
+  <div class="dialog-head"><h2 id="confirmTitle">Delete radar?</h2><div class="spacer"></div><button class="x" onclick="closeConfirm()">✕</button></div>
+  <p id="confirmBody"></p>
+  <div class="dialog-actions"><button class="btn ghost" onclick="closeConfirm()">Cancel</button><button class="btn danger" id="confirmBtn">Delete</button></div>
+</div>
+
+<!-- Blip edit drawer -->
+<div class="drawer-scrim" id="drawerScrim" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true">
+  <div style="display:flex;align-items:center"><h2 id="drawerTitle">Edit blip</h2><div class="spacer" style="flex:1"></div><button class="x" onclick="closeDrawer()">✕</button></div>
+  <div class="field"><label for="blipName">Name *</label><input id="blipName" /></div>
+  <div class="field"><label for="blipDesc">Description *</label><textarea id="blipDesc"></textarea></div>
+  <div class="field-row"><div class="field"><label for="blipQuad">Quadrant</label><select id="blipQuad"></select></div><div class="field"><label for="blipRing">Ring</label><select id="blipRing"></select></div></div>
+  <div class="drawer-actions"><button class="btn ghost" onclick="closeDrawer()">Cancel</button><button class="btn primary" onclick="saveDrawer()">Save</button></div>
+</aside>
+
+<script src="./prototype-shared.js"></script>
+<script>
+/* ============================================================
+   FLOW 2 — HOME DASHBOARD-FIRST
+   Routes: home (/) · library (/radars) · workspace (/radars/:id)
+   ============================================================ */
+let route = { name: "home", radarId: null };
+
+function goHome() { route = { name: "home", radarId: null }; selectedBlipId = null; render(); }
+function goLibrary() { route = { name: "library", radarId: null }; selectedBlipId = null; render(); }
+function goWorkspace(id) { route = { name: "workspace", radarId: id }; selectedBlipId = null; narrowTab = "table"; render(); }
+function currentRadar() { return radars.find(r => r.id === route.radarId); }
+
+function render() {
+  renderTopbar();
+  if (route.name === "home") renderHome();
+  else if (route.name === "library") renderLibrary();
+  else renderWorkspace();
+}
+
+function renderTopbar() {
+  const nav = $("navlinks");
+  nav.innerHTML = `
+    <button class="${route.name==='home'?'active':''}" onclick="goHome()">Home</button>
+    <button class="${route.name==='library'?'active':''}" onclick="goLibrary()">Radars</button>`;
+  const actions = $("topActions");
+  if (route.name === "workspace") actions.innerHTML = `<button class="btn primary" onclick="openBlipDrawer(null)">+ Add Blip</button>`;
+  else actions.innerHTML = `<button class="btn primary" onclick="openCreate()">+ New Radar</button>`;
+}
+
+/* ---------- HOME ---------- */
+function renderHome() {
+  const bundled = radars.find(r => r.bundled) || radars[0];
+  const recent = radars.filter(r => r !== bundled).slice(0, 4);
+  view.innerHTML = `
+    <div class="welcome">Welcome to RadarSmith</div>
+    <div class="welcome-sub">Your private, self-hosted technology radar workspace.</div>
+    ${bundled ? `
+    <div class="hero">
+      <div class="thumb">${renderThumbnail(bundled, 230)}</div>
+      <div class="hero-body">
+        <div class="eyebrow">Bundled radar · start here</div>
+        <h2>${escapeHtml(bundled.name)}</h2>
+        <p>${escapeHtml(bundled.purpose || "")}</p>
+        <div class="hero-actions">
+          <button class="btn primary big" onclick="goWorkspace('${bundled.id}')">Open radar →</button>
+          <button class="btn big" onclick="goLibrary()">View all radars</button>
+        </div>
+      </div>
+    </div>` : ""}
+    <div class="quick-grid">
+      <div class="quick-card" onclick="openCreate()">
+        <div class="qc-icon">➕</div><div class="qc-title">Create a radar</div>
+        <div class="qc-sub">Start from the default four-quadrant template.</div></div>
+      <div class="quick-card" onclick="goLibrary()">
+        <div class="qc-icon">🗂️</div><div class="qc-title">View all radars</div>
+        <div class="qc-sub">${radars.length} radar${radars.length===1?"":"s"} in your library.</div></div>
+      <div class="quick-card" onclick="goWorkspace('${bundled ? bundled.id : ''}')">
+        <div class="qc-icon">📡</div><div class="qc-title">Jump back in</div>
+        <div class="qc-sub">Continue editing ${escapeHtml(bundled ? bundled.name : "a radar")}.</div></div>
+    </div>
+    ${recent.length ? `
+      <div class="section-title">Recent radars</div>
+      <div class="recent-list">
+        ${recent.map(r => `
+          <div class="recent-row" onclick="goWorkspace('${r.id}')">
+            <div><div class="rr-name">${escapeHtml(r.name)}</div>
+            <div class="rr-purpose">${escapeHtml(r.purpose || "No purpose set")}</div></div>
+            <div class="rr-meta">${r.blips.length} blip${r.blips.length===1?"":"s"}</div>
+          </div>`).join("")}
+      </div>` : ""}`;
+}
+
+/* ---------- LIBRARY ---------- */
+function renderLibrary() {
+  if (radars.length === 0) { view.innerHTML = `<div style="text-align:center;padding:60px;color:var(--muted)">No radars yet. <button class="btn primary" onclick="openCreate()">+ Create one</button></div>`; return; }
+  view.innerHTML = `
+    <div class="lib-head"><div><h1 class="page-title">Radars</h1>
+      <div class="subtle">${radars.length} radar${radars.length===1?"":"s"}</div></div></div>
+    <div class="radar-list">
+      ${radars.map(r => `
+        <div class="radar-card" onclick="goWorkspace('${r.id}')">
+          <div class="info"><div class="name">${escapeHtml(r.name)} ${r.bundled?'<span class="tag">Start here</span>':''}</div>
+          <div class="purpose">${escapeHtml(r.purpose || "No purpose set")}</div></div>
+          <div class="meta">${r.blips.length} blip${r.blips.length===1?"":"s"}</div>
+          <button class="icon-btn" onclick="event.stopPropagation(); askDeleteRadar('${r.id}')">🗑</button>
+        </div>`).join("")}
+    </div>`;
+}
+
+/* ---------- WORKSPACE (identical composition to Flow 1) ---------- */
+function renderWorkspace() {
+  const radar = currentRadar();
+  if (!radar) { goHome(); return; }
+  const gridClass = narrowTab === "radar" ? "show-radar" : "show-table";
+  view.innerHTML = `
+    <div class="ws-head"><h1>${escapeHtml(radar.name)}</h1>
+      <button class="edit-name" title="Rename (prototype)">✎</button>
+      <span class="subtle">${escapeHtml(radar.purpose || "")}</span></div>
+    <div class="tabs">
+      <button class="tab ${narrowTab==='table'?'active':''}" onclick="setTab('table')">Blips</button>
+      <button class="tab ${narrowTab==='radar'?'active':''}" onclick="setTab('radar')">Radar</button></div>
+    <div class="ws-grid ${gridClass}">
+      <div class="panel table-panel"><div class="panel-title">Blips (authoritative)</div>${renderTable(radar)}</div>
+      <div class="panel radar-panel"><div class="panel-title">Radar (live view)</div><div class="radar-wrap">${renderRadar(radar)}</div></div>
+    </div>
+    ${renderDetailBar(radar)}`;
+}
+
+render();
+</script>
+</body>
+</html>

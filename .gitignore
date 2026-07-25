@@ -7,6 +7,7 @@ __pycache__
 .agents
 skills-lock.json
 CONTEXT.md
+notes.md
 
 .coverage
 .coverage.*
