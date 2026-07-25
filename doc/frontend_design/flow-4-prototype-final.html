@@ -1,0 +1,1131 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RadarSmith — Flow 4 FINAL (radar-left split · inline edit · explicit description save)</title>
+    <style>
+        :root {
+            --bg: #0f1419;
+            --panel: #1a212b;
+            --panel-2: #222b37;
+            --border: #2d3846;
+            --text: #e6edf3;
+            --muted: #9aa7b4;
+            --accent: #4c8dff;
+            --accent-soft: #23344f;
+            --danger: #ef4b5b;
+            --ok: #3fb950;
+            --warn: #d29922;
+            --ring-adopt: #3fb950;
+            --ring-trial: #58a6ff;
+            --ring-assess: #d29922;
+            --ring-caution: #f85149;
+            --radius: 10px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        a {
+            color: var(--accent);
+        }
+
+        .app {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header.topbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--panel);
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            background: none;
+            border: 0;
+            color: var(--text);
+            font-size: 16px;
+        }
+
+        .brand .logo {
+            color: var(--accent);
+            font-size: 18px;
+        }
+
+        .crumbs {
+            color: var(--muted);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .crumbs button {
+            background: none;
+            border: 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .crumbs button:hover {
+            color: var(--text);
+            text-decoration: underline;
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .btn {
+            border: 1px solid var(--border);
+            background: var(--panel-2);
+            color: var(--text);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+        }
+
+        .btn.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .btn.primary:hover {
+            filter: brightness(1.08);
+        }
+
+        .btn.primary:disabled {
+            opacity: .4;
+            cursor: default;
+            filter: none;
+        }
+
+        .btn.danger {
+            background: var(--danger);
+            border-color: var(--danger);
+            color: #fff;
+        }
+
+        .btn.ghost {
+            background: none;
+        }
+
+        .btn.small {
+            padding: 5px 10px;
+            font-size: 13px;
+        }
+
+        .icon-btn {
+            background: none;
+            border: 0;
+            color: var(--muted);
+            font-size: 15px;
+            padding: 6px;
+            border-radius: 6px;
+        }
+
+        .icon-btn:hover {
+            color: var(--danger);
+            background: var(--panel-2);
+        }
+
+        main.content {
+            flex: 1;
+            padding: 24px 20px;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        h1.page-title {
+            font-size: 22px;
+            margin: 0 0 4px;
+        }
+
+        .subtle {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        /* ---------- Library ---------- */
+        .lib-head {
+            display: flex;
+            align-items: flex-end;
+            margin-bottom: 18px;
+        }
+
+        .radar-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .radar-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 18px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: border-color .12s, transform .06s;
+        }
+
+        .radar-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        .radar-card .info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .radar-card .name {
+            font-weight: 700;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .radar-card .purpose {
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 3px;
+        }
+
+        .radar-card .meta {
+            color: var(--muted);
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .tag {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            color: var(--accent);
+            background: var(--accent-soft);
+            border: 1px solid #34507d;
+            padding: 2px 8px;
+            border-radius: 999px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--muted);
+        }
+
+        .empty-state .btn {
+            margin-top: 16px;
+        }
+
+        /* ---------- Workspace ---------- */
+        .ws-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .ws-head h1 {
+            font-size: 20px;
+            margin: 0;
+        }
+
+        .ws-head .edit-name {
+            background: none;
+            border: 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: none;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 9px;
+            text-align: center;
+            border: 1px solid var(--border);
+            background: var(--panel);
+            color: var(--muted);
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .tab.active {
+            background: var(--accent-soft);
+            color: var(--text);
+            border-color: var(--accent);
+        }
+
+        /* RADAR-LEFT split */
+        .ws-grid {
+            display: grid;
+            grid-template-columns: 460px 1fr;
+            gap: 18px;
+            align-items: start;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+
+        .panel .panel-title {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 700;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+        }
+
+        .panel .panel-title .spacer {
+            flex: 1;
+        }
+
+        .radar-wrap {
+            padding: 14px;
+            position: sticky;
+            top: 76px;
+        }
+
+        .readonly-hint {
+            text-align: center;
+            color: var(--muted);
+            font-size: 11px;
+            margin-top: 6px;
+        }
+
+        svg.radar {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* radar is READ-ONLY: markers only select/hover, never edit */
+        .marker {
+            cursor: pointer;
+        }
+
+        .marker circle {
+            transition: transform .1s ease;
+            transform-box: fill-box;
+            transform-origin: center;
+        }
+
+        .marker:hover circle,
+        .marker:focus circle {
+            transform: scale(1.25);
+        }
+
+        .marker:focus {
+            outline: none;
+        }
+
+        .marker text {
+            font-size: 11px;
+            font-weight: 700;
+            fill: #fff;
+            pointer-events: none;
+        }
+
+        .marker.selected circle {
+            stroke: #fff;
+            stroke-width: 3px;
+        }
+
+        .quad-label {
+            fill: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .ring-label {
+            fill: var(--muted);
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+        }
+
+        /* lightweight hover tooltip for marker name */
+        .radar-tip {
+            position: fixed;
+            pointer-events: none;
+            background: #000;
+            color: #fff;
+            padding: 4px 9px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 30;
+            opacity: 0;
+            transition: opacity .1s;
+            white-space: nowrap;
+            border: 1px solid var(--border);
+        }
+
+        .radar-tip.show {
+            opacity: 1;
+        }
+
+        table.blips {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        table.blips th {
+            text-align: left;
+            padding: 10px 14px;
+            color: var(--muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        table.blips td {
+            padding: 7px 14px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        table.blips tr.blip-row {
+            cursor: pointer;
+        }
+
+        table.blips tbody tr.blip-row:hover {
+            background: var(--panel-2);
+        }
+
+        table.blips tr.selected {
+            background: var(--accent-soft);
+        }
+
+        table.blips tr.selected td:first-child {
+            box-shadow: inset 3px 0 0 var(--accent);
+        }
+
+        .name-input {
+            width: 100%;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text);
+            font-weight: 600;
+            font-size: 14px;
+            font-family: inherit;
+            border-radius: 6px;
+            padding: 5px 6px;
+        }
+
+        .name-input:hover {
+            border-color: var(--border);
+        }
+
+        .name-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: var(--panel-2);
+        }
+
+        select.cell {
+            background: var(--panel-2);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 4px 6px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        select.cell:focus {
+            outline: 2px solid var(--accent);
+        }
+
+        .add-row td {
+            background: #141b24;
+        }
+
+        .add-row input {
+            width: 100%;
+            background: var(--panel-2);
+            border: 1px dashed var(--border);
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            border-radius: 6px;
+            padding: 6px 8px;
+        }
+
+        .add-row input:focus {
+            outline: none;
+            border-color: var(--accent);
+            border-style: solid;
+        }
+
+        .add-hint {
+            color: var(--muted);
+            font-size: 12px;
+            padding: 8px 14px;
+        }
+
+        /* inline detail/edit panel — explicit description save, buttons in one line */
+        .detail {
+            margin-top: 16px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+
+        .detail .d-head {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .detail .d-head .d-title {
+            font-weight: 700;
+        }
+
+        .detail .d-head .d-place {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .detail .d-head .spacer {
+            flex: 1;
+        }
+
+        .desc-status {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .desc-status.ok {
+            color: var(--muted);
+        }
+
+        .desc-status.dirty {
+            color: var(--warn);
+        }
+
+        .detail .d-body {
+            padding: 14px 16px;
+        }
+
+        .detail label {
+            display: block;
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .detail textarea {
+            width: 100%;
+            min-height: 76px;
+            resize: vertical;
+            background: var(--panel-2);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 9px 10px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .detail textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .detail .d-links {
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .detail.empty {
+            color: var(--muted);
+            font-size: 13px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* toast */
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--panel-2);
+            border: 1px solid var(--ok);
+            color: var(--text);
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .15s, transform .15s;
+            z-index: 40;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        #toast .check {
+            color: var(--ok);
+        }
+
+        /* dialogs */
+        .dialog-scrim {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .55);
+            z-index: 20;
+            display: none;
+        }
+
+        .dialog-scrim.open {
+            display: block;
+        }
+
+        .dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            z-index: 22;
+            width: 420px;
+            max-width: 92vw;
+            padding: 20px;
+            display: none;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .dialog.open {
+            display: flex;
+        }
+
+        .dialog h2 {
+            margin: 0;
+            font-size: 17px;
+        }
+
+        .dialog p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .field label {
+            display: block;
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .field input {
+            width: 100%;
+            background: var(--panel-2);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 9px 10px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .dialog-actions,
+        .dialog-head {
+            display: flex;
+        }
+
+        .dialog-actions {
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        .dialog-head {
+            align-items: center;
+        }
+
+        .dialog-head .spacer {
+            flex: 1;
+        }
+
+        .x {
+            background: none;
+            border: 0;
+            color: var(--muted);
+            font-size: 18px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 860px) {
+            .tabs {
+                display: flex;
+            }
+
+            .ws-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .ws-grid.show-blips .radar-panel {
+                display: none;
+            }
+
+            .ws-grid.show-radar .blips-panel {
+                display: none;
+            }
+
+            .ws-grid.show-radar .detail-under {
+                display: none;
+            }
+
+            .radar-wrap {
+                position: static;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <header class="topbar">
+            <button class="brand" onclick="goLibrary()"><span class="logo">◤</span> RadarSmith</button>
+            <div class="crumbs" id="crumbs"></div>
+            <div class="spacer"></div>
+            <div id="topActions"></div>
+        </header>
+        <main class="content" id="view"></main>
+    </div>
+
+    <div id="toast"><span class="check">✓</span><span id="toastMsg">Saved</span></div>
+    <div id="radarTip" class="radar-tip"></div>
+
+    <!-- Create radar dialog -->
+    <div class="dialog-scrim" id="createScrim" onclick="closeCreate()"></div>
+    <div class="dialog" id="createDialog" role="dialog" aria-modal="true">
+        <div class="dialog-head">
+            <h2>New radar</h2>
+            <div class="spacer"></div><button class="x" onclick="closeCreate()">✕</button>
+        </div>
+        <div class="field"><label for="newName">Name *</label><input id="newName" placeholder="e.g. Mobile Radar" />
+        </div>
+        <div class="field"><label for="newPurpose">Purpose (optional)</label><input id="newPurpose"
+                placeholder="What stance does this radar express?" /></div>
+        <div class="dialog-actions"><button class="btn ghost" onclick="closeCreate()">Cancel</button><button
+                class="btn primary" onclick="submitCreate()">Create radar</button></div>
+    </div>
+
+    <!-- Confirm delete dialog -->
+    <div class="dialog-scrim" id="confirmScrim" onclick="closeConfirm()"></div>
+    <div class="dialog" id="confirmDialog" role="alertdialog" aria-modal="true">
+        <div class="dialog-head">
+            <h2 id="confirmTitle">Delete?</h2>
+            <div class="spacer"></div><button class="x" onclick="closeConfirm()">✕</button>
+        </div>
+        <p id="confirmBody"></p>
+        <div class="dialog-actions"><button class="btn ghost" onclick="closeConfirm()">Cancel</button><button
+                class="btn danger" id="confirmBtn">Delete</button></div>
+    </div>
+
+    <script>
+        /* ============================================================
+           FLOW 4 — FINAL
+           Library-first · Radar-LEFT split · Radar-first tab
+           Inline name edit + inline description panel (no drawer)
+           Refinements in this build:
+             1) Hover/focus a marker -> tooltip with the blip name (radar stays read-only)
+             2) Radar is strictly read-only: markers only select/hover, never edit
+             3) Placement (quadrant/ring) saves INSTANTLY; name saves on commit;
+                DESCRIPTION uses an EXPLICIT Save button with an inline status indicator
+           ============================================================ */
+        const QUADRANTS = ["Techniques", "Platforms", "Tools", "Languages & Frameworks"];
+        const RINGS = ["Adopt", "Trial", "Assess", "Caution"];
+        const RING_COLORS = ["var(--ring-adopt)", "var(--ring-trial)", "var(--ring-assess)", "var(--ring-caution)"];
+
+        let radars = [
+            {
+                id: "r-bundled", name: "Engineering Radar", purpose: "Our current tech stances", bundled: true, blips: [
+                    { id: "b1", name: "PostgreSQL", q: 2, r: 0, desc: "Primary relational store. See https://postgresql.org" },
+                    { id: "b2", name: "React", q: 3, r: 0, desc: "Default UI library for web apps." },
+                    { id: "b3", name: "Kafka", q: 1, r: 1, desc: "Event streaming backbone." },
+                    { id: "b4", name: "Deno", q: 3, r: 2, desc: "Evaluating as a Node alternative." },
+                    { id: "b5", name: "Trunk-based dev", q: 0, r: 0, desc: "Short-lived branches, frequent merges." },
+                    { id: "b6", name: "GraphQL", q: 0, r: 2, desc: "Assessing for aggregation layer." },
+                    { id: "b7", name: "Terraform", q: 2, r: 1, desc: "Infra as code for cloud resources." },
+                    { id: "b8", name: "Service mesh", q: 1, r: 3, desc: "Complexity outweighs benefit for us now." },
+                ]
+            },
+            {
+                id: "r-data", name: "Data Platform Radar", purpose: "Warehouse & pipeline choices", bundled: false, blips: [
+                    { id: "d1", name: "dbt", q: 0, r: 0, desc: "Transformation layer standard." },
+                    { id: "d2", name: "Snowflake", q: 1, r: 1, desc: "Trialling as warehouse." },
+                ]
+            },
+        ];
+
+        let route = { name: "library", radarId: null };
+        let selectedBlipId = null;
+        let narrowTab = "radar"; // radar-first
+        let confirmAction = null;
+        let descDirty = false;    // unsaved description edits for the selected blip
+
+        const $ = (id) => document.getElementById(id);
+        const view = $("view");
+        function currentRadar() { return radars.find(r => r.id === route.radarId); }
+        function selectedBlip() { const r = currentRadar(); return r ? r.blips.find(b => b.id === selectedBlipId) : null; }
+
+        /* ---------- router ---------- */
+        function goLibrary() { descDirty = false; route = { name: "library", radarId: null }; selectedBlipId = null; render(); }
+        function goWorkspace(id) { descDirty = false; route = { name: "workspace", radarId: id }; selectedBlipId = null; narrowTab = "radar"; render(); }
+
+        function render() {
+            syncDescFromDOM();      // never lose in-progress description text on re-render
+            renderTopbar();
+            if (route.name === "library") renderLibrary();
+            else renderWorkspace();
+        }
+        function renderTopbar() {
+            const crumbs = $("crumbs"), actions = $("topActions");
+            if (route.name === "library") {
+                crumbs.innerHTML = "";
+                actions.innerHTML = `<button class="btn primary" onclick="openCreate()">+ New Radar</button>`;
+            } else {
+                crumbs.innerHTML = `<span>›</span><button onclick="goLibrary()">Radars</button>`;
+                actions.innerHTML = `<button class="btn primary" onclick="focusAddRow()">+ Add Blip</button>`;
+            }
+        }
+
+        /* ---------- library ---------- */
+        function renderLibrary() {
+            if (radars.length === 0) {
+                view.innerHTML = `<div class="empty-state"><div style="font-size:15px">You have no radars yet.</div>
+      <button class="btn primary" onclick="openCreate()">+ Create your first radar</button></div>`;
+                return;
+            }
+            view.innerHTML = `
+    <div class="lib-head"><div><h1 class="page-title">Radars</h1>
+      <div class="subtle">${radars.length} radar${radars.length === 1 ? "" : "s"} · self-hosted, single author</div></div></div>
+    <div class="radar-list">
+      ${radars.map(r => `
+        <div class="radar-card" onclick="goWorkspace('${r.id}')">
+          <div class="info"><div class="name">${escapeHtml(r.name)} ${r.bundled ? '<span class="tag">Start here</span>' : ''}</div>
+          <div class="purpose">${escapeHtml(r.purpose || "No purpose set")}</div></div>
+          <div class="meta">${r.blips.length} blip${r.blips.length === 1 ? "" : "s"}</div>
+          <button class="icon-btn" title="Delete radar" onclick="event.stopPropagation(); askDeleteRadar('${r.id}')">🗑</button>
+        </div>`).join("")}
+    </div>`;
+        }
+
+        /* ---------- workspace: radar-left split ---------- */
+        function renderWorkspace() {
+            const radar = currentRadar();
+            if (!radar) { goLibrary(); return; }
+            const gridClass = narrowTab === "blips" ? "show-blips" : "show-radar";
+            view.innerHTML = `
+    <div class="ws-head"><h1>${escapeHtml(radar.name)}</h1>
+      <button class="edit-name" title="Rename (prototype)">✎</button>
+      <span class="subtle">${escapeHtml(radar.purpose || "")}</span></div>
+    <div class="tabs">
+      <button class="tab ${narrowTab === 'radar' ? 'active' : ''}" onclick="setTab('radar')">Radar</button>
+      <button class="tab ${narrowTab === 'blips' ? 'active' : ''}" onclick="setTab('blips')">Blips</button></div>
+    <div class="ws-grid ${gridClass}">
+      <div class="panel radar-panel"><div class="panel-title">Radar (read-only view)</div>
+        <div class="radar-wrap">${renderRadar(radar)}
+          <div class="readonly-hint">Hover a marker for its name · click to select · edit on the right</div></div></div>
+      <div class="panel blips-panel"><div class="panel-title">Blips <span class="spacer"></span>
+        <span class="subtle" style="font-size:11px;text-transform:none;letter-spacing:0">name &amp; placement save on change</span></div>
+        ${renderTable(radar)}</div>
+    </div>
+    <div class="detail-under">${renderDetail(radar)}</div>`;
+            attachMarkerTips();
+        }
+
+        function renderTable(radar) {
+            const rows = radar.blips.map((b, i) => `
+    <tr class="blip-row ${b.id === selectedBlipId ? 'selected' : ''}" onclick="selectBlip('${b.id}')">
+      <td><input class="name-input" value="${escapeHtml(b.name)}" onclick="event.stopPropagation()"
+            onchange="renameBlip('${b.id}', this.value)" aria-label="Blip name" /></td>
+      <td><select class="cell" onclick="event.stopPropagation()" onchange="setPlacement('${b.id}','q',this.value)">
+            ${QUADRANTS.map((q, qi) => `<option value="${qi}" ${qi === b.q ? 'selected' : ''}>${q}</option>`).join("")}</select></td>
+      <td><select class="cell" onclick="event.stopPropagation()" onchange="setPlacement('${b.id}','r',this.value)">
+            ${RINGS.map((r, ri) => `<option value="${ri}" ${ri === b.r ? 'selected' : ''}>${r}</option>`).join("")}</select></td>
+      <td style="text-align:right"><button class="icon-btn" title="Delete blip"
+            onclick="event.stopPropagation(); askDeleteBlip('${b.id}')">🗑</button></td>
+    </tr>`).join("");
+            const addRow = `
+    <tr class="add-row">
+      <td><input id="addName" placeholder="+ Add blip — type a name, press Enter"
+            onkeydown="if(event.key==='Enter') addBlipInline()" aria-label="New blip name" /></td>
+      <td><select id="addQuad" class="cell">${QUADRANTS.map((q, i) => `<option value="${i}">${q}</option>`).join("")}</select></td>
+      <td><select id="addRing" class="cell">${RINGS.map((r, i) => `<option value="${i}">${r}</option>`).join("")}</select></td>
+      <td style="text-align:right"><button class="btn small primary" onclick="addBlipInline()">Add</button></td>
+    </tr>`;
+            return `<table class="blips"><thead><tr>
+      <th>Name</th><th>Quadrant</th><th>Ring</th><th></th></tr></thead>
+      <tbody>${rows}${addRow}</tbody></table>
+      ${radar.blips.length === 0 ? '<div class="add-hint">No blips yet — add your first one in the row above.</div>' : ''}`;
+        }
+
+        /* explicit description save + inline status; placement/name shown for context (read-only labels) */
+        function renderDetail(radar) {
+            const b = radar.blips.find(x => x.id === selectedBlipId);
+            if (!b) return `<div class="detail empty">Select a blip (marker or row) to view and edit its description here.</div>`;
+            return `
+    <div class="detail">
+      <div class="d-head">
+        <span class="d-title">${escapeHtml(b.name)}</span>
+        <span class="d-place">${QUADRANTS[b.q]} · ${RINGS[b.r]}</span>
+        <span class="spacer"></span>
+        <span id="descStatus" class="desc-status ok">Saved ✓</span>
+        <button id="descSaveBtn" class="btn small primary" onclick="saveDesc('${b.id}')" disabled>Save description</button>
+        <button class="icon-btn" title="Delete blip" onclick="askDeleteBlip('${b.id}')">🗑</button>
+      </div>
+      <div class="d-body">
+        <label for="dDesc">Description <span style="font-weight:400">(explicit save — Ctrl/⌘+Enter)</span></label>
+        <textarea id="dDesc" oninput="markDescDirty()"
+          onkeydown="if((event.metaKey||event.ctrlKey)&&event.key==='Enter') saveDesc('${b.id}')">${escapeHtml(b.desc)}</textarea>
+        <div class="d-links" id="dLinks">Links become clickable when displayed: ${linkify(b.desc)}</div>
+      </div>
+    </div>`;
+        }
+
+        /* ---------- radar svg (deterministic markers) — READ-ONLY ---------- */
+        function seededJitter(id, salt) { let h = 2166136261; const s = id + ":" + salt; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return ((h >>> 0) % 1000) / 1000; }
+        function markerPos(b, R) {
+            const startDeg = b.q * 90;
+            const angle = (startDeg + (0.15 + 0.7 * seededJitter(b.id, "a")) * 90) * Math.PI / 180;
+            const inner = b.r * R / 4, outer = (b.r + 1) * R / 4;
+            const rad = inner + (0.25 + 0.5 * seededJitter(b.id, "r")) * (outer - inner);
+            return { x: Math.cos(angle) * rad, y: -Math.sin(angle) * rad };
+        }
+        function renderRadar(radar) {
+            const size = 430, cx = size / 2, cy = size / 2, R = size / 2 - 30;
+            let svg = `<svg class="radar" viewBox="0 0 ${size} ${size}" role="graphics-document" aria-label="Radar for ${escapeHtml(radar.name)}">`;
+            for (let i = 4; i >= 1; i--) svg += `<circle cx="${cx}" cy="${cy}" r="${i * R / 4}" fill="${i % 2 ? '#151c25' : '#111820'}" stroke="var(--border)"/>`;
+            svg += `<line x1="${cx - R}" y1="${cy}" x2="${cx + R}" y2="${cy}" stroke="var(--border)"/><line x1="${cx}" y1="${cy - R}" x2="${cx}" y2="${cy + R}" stroke="var(--border)"/>`;
+            for (let i = 0; i < 4; i++) svg += `<text class="ring-label" x="${cx}" y="${cy - (i + 0.5) * R / 4 + 3}" text-anchor="middle">${RINGS[i]}</text>`;
+            [[cx + R * 0.55, cy - R * 0.9, QUADRANTS[0]], [cx - R * 0.55, cy - R * 0.9, QUADRANTS[1]], [cx - R * 0.55, cy + R * 0.98, QUADRANTS[2]], [cx + R * 0.55, cy + R * 0.98, QUADRANTS[3]]]
+                .forEach(l => svg += `<text class="quad-label" x="${l[0]}" y="${l[1]}" text-anchor="middle">${l[2]}</text>`);
+            radar.blips.forEach((b, idx) => {
+                const p = markerPos(b, R), x = cx + p.x, y = cy + p.y;
+                const label = `${b.name} — ${QUADRANTS[b.q]}, ${RINGS[b.r]}`;
+                svg += `<g class="marker ${b.id === selectedBlipId ? 'selected' : ''}" role="graphics-symbol img"
+        aria-label="${escapeHtml(label)}" data-tip="${escapeHtml(b.name)}" onclick="selectBlip('${b.id}')" tabindex="0">
+        <title>${escapeHtml(label)}</title>
+        <circle cx="${x}" cy="${y}" r="12" fill="${RING_COLORS[b.r]}" stroke="#0f1419" stroke-width="1.5"/>
+        <text x="${x}" y="${y + 4}" text-anchor="middle">${idx + 1}</text></g>`;
+            });
+            return svg + `</svg>`;
+        }
+
+        /* lightweight floating tooltip on hover/focus (native <title> is the a11y fallback) */
+        function attachMarkerTips() {
+            const tip = $("radarTip");
+            document.querySelectorAll(".marker").forEach(m => {
+                const show = (e) => {
+                    tip.textContent = m.getAttribute("data-tip");
+                    const box = (m.getBoundingClientRect());
+                    tip.style.left = (box.left + box.width / 2) + "px";
+                    tip.style.top = (box.top - 8) + "px";
+                    tip.style.transform = "translate(-50%, -100%)";
+                    tip.classList.add("show");
+                };
+                const hide = () => tip.classList.remove("show");
+                m.addEventListener("mouseenter", show);
+                m.addEventListener("mousemove", show);
+                m.addEventListener("mouseleave", hide);
+                m.addEventListener("focus", show);
+                m.addEventListener("blur", hide);
+            });
+        }
+
+        /* ---------- interactions ---------- */
+        function setTab(t) { narrowTab = t; render(); }
+        function selectBlip(id) {
+            selectedBlipId = (selectedBlipId === id ? null : id);
+            descDirty = false;
+            render();
+            const row = document.querySelector("tr.selected");
+            if (row) row.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
+        function renameBlip(id, val) {
+            const b = currentRadar().blips.find(x => x.id === id);
+            const name = val.trim();
+            if (!name) { toast("Name can’t be empty", false); render(); return; }
+            b.name = name; toast(); render();
+        }
+        function setPlacement(id, dim, val) {           // INSTANT save
+            const b = currentRadar().blips.find(x => x.id === id);
+            if (dim === "q") b.q = parseInt(val, 10); else b.r = parseInt(val, 10);
+            toast(); render(); // marker moves live
+        }
+
+        /* description = EXPLICIT save */
+        function markDescDirty() {
+            descDirty = true;
+            const s = $("descStatus"), btn = $("descSaveBtn");
+            if (s) { s.textContent = "● Unsaved changes"; s.className = "desc-status dirty"; }
+            if (btn) btn.disabled = false;
+        }
+        function saveDesc(id) {
+            const ta = $("dDesc"); if (!ta) return;
+            const b = currentRadar().blips.find(x => x.id === id);
+            b.desc = ta.value.trim();
+            descDirty = false;
+            const s = $("descStatus"), btn = $("descSaveBtn"), links = $("dLinks");
+            if (s) { s.textContent = "Saved ✓"; s.className = "desc-status ok"; }
+            if (btn) btn.disabled = true;
+            if (links) links.innerHTML = "Links become clickable when displayed: " + linkify(b.desc);
+            toast("Description saved");
+        }
+        /* safety net: if a re-render happens mid-edit, keep the typed text (silent, no toast) */
+        function syncDescFromDOM() {
+            if (!descDirty) return;
+            const ta = $("dDesc"); const b = selectedBlip();
+            if (ta && b) { b.desc = ta.value.trim(); }
+            descDirty = false;
+        }
+
+        function addBlipInline() {
+            const nameEl = $("addName"); if (!nameEl) return;
+            const name = nameEl.value.trim();
+            if (!name) { nameEl.focus(); nameEl.style.borderColor = "var(--danger)"; return; }
+            const q = parseInt($("addQuad").value, 10), r = parseInt($("addRing").value, 10);
+            const id = "b-" + Date.now();
+            currentRadar().blips.push({ id, name, q, r, desc: "" });
+            selectedBlipId = id; descDirty = false; toast("Blip added"); render();
+            setTimeout(() => { const el = $("addName"); if (el) el.focus(); }, 30); // ready for the next one
+        }
+        function focusAddRow() { const el = $("addName"); if (el) { el.scrollIntoView({ block: "center" }); el.focus(); } }
+
+        /* ---------- create radar ---------- */
+        function openCreate() { $("createScrim").classList.add("open"); $("createDialog").classList.add("open"); $("newName").value = ""; $("newPurpose").value = ""; setTimeout(() => $("newName").focus(), 50); }
+        function closeCreate() { $("createScrim").classList.remove("open"); $("createDialog").classList.remove("open"); }
+        function submitCreate() {
+            const name = $("newName").value.trim();
+            if (!name) { $("newName").focus(); $("newName").style.borderColor = "var(--danger)"; return; }
+            const id = "r-" + Date.now();
+            radars.push({ id, name, purpose: $("newPurpose").value.trim(), bundled: false, blips: [] });
+            closeCreate(); goWorkspace(id);
+        }
+
+        /* ---------- delete confirm ---------- */
+        function askDeleteRadar(id) {
+            const r = radars.find(x => x.id === id);
+            $("confirmTitle").textContent = `Delete “${r.name}”?`;
+            $("confirmBody").textContent = `This permanently removes the radar and all ${r.blips.length} of its blips. This cannot be undone.`;
+            $("confirmBtn").textContent = "Delete radar";
+            confirmAction = () => { radars = radars.filter(x => x.id !== id); closeConfirm(); if (route.radarId === id) goLibrary(); else render(); };
+            openConfirm();
+        }
+        function askDeleteBlip(id) {
+            const radar = currentRadar();
+            const b = radar.blips.find(x => x.id === id);
+            $("confirmTitle").textContent = `Delete “${b.name}”?`;
+            $("confirmBody").textContent = `This blip will be removed from the radar. This cannot be undone.`;
+            $("confirmBtn").textContent = "Delete blip";
+            confirmAction = () => { radar.blips = radar.blips.filter(x => x.id !== id); if (selectedBlipId === id) { selectedBlipId = null; descDirty = false; } closeConfirm(); toast("Blip deleted"); render(); };
+            openConfirm();
+        }
+        function openConfirm() { $("confirmScrim").classList.add("open"); $("confirmDialog").classList.add("open"); }
+        function closeConfirm() { $("confirmScrim").classList.remove("open"); $("confirmDialog").classList.remove("open"); confirmAction = null; }
+        $("confirmBtn").addEventListener("click", () => { if (confirmAction) confirmAction(); });
+
+        /* ---------- toast + utils ---------- */
+        let toastTimer = null;
+        function toast(msg = "Saved", ok = true) {
+            const t = $("toast"); $("toastMsg").textContent = msg;
+            t.querySelector(".check").textContent = ok ? "✓" : "!";
+            t.querySelector(".check").style.color = ok ? "var(--ok)" : "var(--danger)";
+            t.style.borderColor = ok ? "var(--ok)" : "var(--danger)";
+            t.classList.add("show");
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => t.classList.remove("show"), 1300);
+        }
+        function escapeHtml(s) { return (s || "").replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+        function linkify(s) { const e = escapeHtml(s); return e ? e.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>') : '<em>none yet</em>'; }
+        document.addEventListener("keydown", e => { if (e.key === "Escape") { closeCreate(); closeConfirm(); } });
+
+        render();
+    </script>
+</body>
+
+</html>
