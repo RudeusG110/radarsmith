@@ -7,7 +7,6 @@ from app.schemas.quadrant import QuadrantPost
 
 class QuadrantDb:
     def __init__(self, ctx: AppContext) -> None:
-        self.__ctx = ctx
         self.__db = ctx.db
 
     def create(self, radar_id: UUID, quadrant_post: QuadrantPost) -> RadarQuadrant:

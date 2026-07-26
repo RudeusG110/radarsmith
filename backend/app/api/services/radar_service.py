@@ -3,19 +3,19 @@ from app.crud.quadrant import QuadrantDb
 from app.crud.radar import RadarDb
 from app.crud.ring import RingDb
 from app.domain.constants import DEFAULT_QUADRANTS, DEFAULT_RINGS
-
-# from backend.app.models.models import Radar
+from app.models.models import Radar
 from app.schemas.radar import RadarPost
 
 
 class RadarService:
     def __init__(self, ctx: AppContext) -> None:
         self.__ctx = ctx
+        # self.__db = ctx.db
         self.__radar_db = RadarDb(ctx)
         self.__quadrant_db = QuadrantDb(ctx)
         self.__ring_db = RingDb(ctx)
 
-    def create_radar(self, radar_post: RadarPost) -> None:
+    def create_radar(self, radar_post: RadarPost) -> Radar:
         """Create a new radar and its default quadrants and rings."""
         radar = self.__radar_db.create(radar_post)
 
@@ -26,3 +26,4 @@ class RadarService:
             self.__ring_db.create(radar.id, ring)
 
         self.__ctx.db.commit()
+        return radar

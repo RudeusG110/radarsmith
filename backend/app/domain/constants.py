@@ -1,5 +1,5 @@
-from app.domain.enums import RingType
-from app.schemas.quadrant import QuadrantPost, QuadrantType
+from app.domain.enums import QuadrantType, RingType
+from app.schemas.quadrant import QuadrantPost
 from app.schemas.ring import RingPost
 
 DEFAULT_QUADRANTS = [
