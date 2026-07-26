@@ -1,7 +1,7 @@
 from collections.abc import Generator
 
 import pytest
-from app.context.app_context import AppContext, get_session_factory
+from app.context.app_context import AppContext
 from lib.constants import TEMPLATE_DB_NAME, TEST_DB_NAME
 from lib.context import (
     Dependencies,
@@ -9,12 +9,13 @@ from lib.context import (
     create_db,
     create_db_from,
     get_template_settings,
-    get_test_context,
+    get_test_engine,
     kill_connections,
     run_migrations,
 )
 from lib.database_helper import DatabaseHelper
 from lib.schemas import MockTables
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -27,7 +28,6 @@ def prepare_template_db() -> Generator[None]:
 
     This DB is later cloned to create a fresh test DB for each individual test.
     """
-    get_session_factory.cache_clear()
     cleanup_db(TEMPLATE_DB_NAME)
     create_db(TEMPLATE_DB_NAME)
 
@@ -51,16 +51,25 @@ def setup_test_db() -> Generator[None]:
     cleanup_db(TEST_DB_NAME)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def context(setup_test_db: None, dependencies: Dependencies) -> Generator[AppContext]:
-    """Enforce teardown order.
+    """Provide an AppContext whose writes are isolated to a single test.
 
-    Context is disposed before setup_test_db drops the database.
+    The session joins an outer transaction with ``join_transaction_mode="create_savepoint"``,
+    so every ``commit()`` only releases a SAVEPOINT. Rolling the outer transaction back on
+    teardown discards everything the test wrote, so each test starts from the freshly
+    migrated schema with no cross-test bleed.
     """
-    ctx = get_test_context(dependencies)
-    yield ctx
-    ctx.dispose()
-    get_session_factory.cache_clear()
+    settings = dependencies.settings_factory()
+    connection = get_test_engine(settings.db_url).connect()
+    transaction = connection.begin()
+    session = Session(bind=connection, join_transaction_mode="create_savepoint", autoflush=False)
+
+    yield AppContext(session, settings)
+
+    session.close()
+    transaction.rollback()
+    connection.close()
 
 
 @pytest.fixture(autouse=True)
