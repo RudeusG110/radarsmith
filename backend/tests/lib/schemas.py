@@ -5,6 +5,9 @@ from pydantic import BaseModel, ConfigDict, RootModel
 
 
 class MockData(BaseModel):
+    table_name: str
+    id_field: str
+    reset_id: bool = False
     data: Sequence[Base]
 
     model_config = ConfigDict(arbitrary_types_allowed=True)

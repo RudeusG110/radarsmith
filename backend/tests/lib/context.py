@@ -3,6 +3,7 @@ from functools import lru_cache
 
 from alembic import command
 from alembic.config import Config
+from app.context.app_context import AppContext, get_session_factory
 from app.context.settings_context import AppSettings
 from psycopg import connect, sql
 from sqlalchemy import Engine, create_engine
@@ -89,3 +90,14 @@ def get_test_engine(db_url: str) -> Engine:
     be dropped and recreated without leaving stale pooled connections behind.
     """
     return create_engine(db_url, poolclass=NullPool)
+
+
+def get_test_context(dependencies: Dependencies | None) -> AppContext:
+    if dependencies is None:
+        dependencies = Dependencies()
+
+    settings = dependencies.settings_factory()
+    session_local = get_session_factory(settings.db_url)
+
+    database = session_local()
+    return AppContext(database, settings)
