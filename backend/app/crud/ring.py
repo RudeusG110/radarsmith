@@ -13,6 +13,6 @@ class RingDb:
         """Create a new ring."""
         ring = RadarRing(radar_id=radar_id, name=ring_post.name, position=ring_post.position)
         self.__db.add(ring)
-        self.__db.commit()
+        self.__db.flush()
         self.__db.refresh(ring)
         return ring

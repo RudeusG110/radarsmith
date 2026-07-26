@@ -10,7 +10,6 @@ from app.schemas.radar import RadarPost
 class RadarService:
     def __init__(self, ctx: AppContext) -> None:
         self.__ctx = ctx
-        # self.__db = ctx.db
         self.__radar_db = RadarDb(ctx)
         self.__quadrant_db = QuadrantDb(ctx)
         self.__ring_db = RingDb(ctx)

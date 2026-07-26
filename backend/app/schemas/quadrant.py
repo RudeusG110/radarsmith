@@ -3,7 +3,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class QuadrantPost(BaseModel):
-    name: QuadrantType = Field(max_length=100)
+    name: QuadrantType
     position: int = Field(ge=1, le=4)
 
 

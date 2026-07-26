@@ -13,6 +13,6 @@ class QuadrantDb:
         """Create a new quadrant."""
         quadrant = RadarQuadrant(radar_id=radar_id, name=quadrant_post.name, position=quadrant_post.position)
         self.__db.add(quadrant)
-        self.__db.commit()
+        self.__db.flush()
         self.__db.refresh(quadrant)
         return quadrant

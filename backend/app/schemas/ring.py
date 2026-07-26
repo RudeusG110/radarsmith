@@ -3,7 +3,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class RingPost(BaseModel):
-    name: RingType = Field(max_length=100)
+    name: RingType
     position: int = Field(ge=1, le=4)
 
 
