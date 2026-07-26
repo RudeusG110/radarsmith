@@ -12,6 +12,6 @@ class RadarDb:
         """Create a new radar."""
         radar = Radar(name=radar_post.name, purpose=radar_post.purpose)
         self.__db.add(radar)
-        self.__db.commit()
+        self.__db.flush()
         self.__db.refresh(radar)
         return radar
