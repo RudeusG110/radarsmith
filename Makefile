@@ -26,6 +26,7 @@ format:
 typecheck:
 	poetry run pyright
 
+# Database commands for managing the PostgreSQL database using Docker Compose
 db-up:
 	$(COMPOSE) up -d db
 
@@ -35,6 +36,13 @@ db-down:
 db-reset:
 	$(COMPOSE) down -v
 	$(COMPOSE) up -d db
+
+# Alembic commands for database schema migrations
+up-schema:
+	cd backend && poetry run alembic -c alembic/alembic.ini upgrade head
+
+down-schema:
+	cd backend && poetry run alembic -c alembic/alembic.ini downgrade -1
 
 # --- Frontend ---
 fe-setup:

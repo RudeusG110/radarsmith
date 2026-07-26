@@ -7,16 +7,21 @@ services:
   db:
     image: postgres:18
     container_name: radarsmith_db
-    # Publish the container port to the host so host-side FastAPI and
-    # pytest can connect at localhost:5432. Format is "HOST:CONTAINER".
+    # Publish the container port to the host. Host ports 5432/5433 are often
+    # taken by other local projects, so radarsmith uses 55432 on the host.
+    # Format is "HOST:CONTAINER"; connect from the host at localhost:55432 and
+    # from inside a devcontainer at the docker bridge gateway (e.g. 172.17.0.1:55432).
     ports:
-      - "5432:5432"
+      - "55432:5432"
     # Development-only credentials, kept out of git (see dev/db.env).
     env_file:
       - db.env
     # Named volume => data survives `db-down`; `db-reset` (down -v) wipes it.
+    # postgres:18+ stores data in a version-specific subdirectory, so the mount
+    # goes at /var/lib/postgresql (not /var/lib/postgresql/data). See the image
+    # note referencing docker-library/postgres#1259.
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     # Postgres is not a web server: ask Postgres itself if it is ready.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
