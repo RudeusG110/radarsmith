@@ -28,6 +28,32 @@ doc/                architecture, product spec, roadmap, tickets, research
 ```bash
 make setup
 ```
+## Database upgrade
+Modify the database model accordingly to your specification. Change to the backend folder in your terminal and run the commands bellow:
+
+```
+alembic -c alembic/alembic.ini revision -m "<add your own comment>" --autogenerate
+```
+
+You should see a new file in alembic/versions folder.
+It should contain the code for upgrading and downgrading db table based on the changes you have made in the model. You will probably get code styles warnings in this file. Fixed them, if you can.
+Next, run the following command:
+
+```bash
+make up-schema
+```
+
+This will upgrade your db table. To verify that everything works correctly, downgrade alembic version by running the following commands (downgrades by one version):
+
+```bash
+make down-schema
+```
+
+If this works accordingly, run the following command again to upgrade to the latest alembic version:
+
+```bash
+make up-schema
+```
 
 ## Common commands
 
