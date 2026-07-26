@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 def test_create_radar(client: TestClient) -> None:
     radar_payload = {"name": "Test Radar", "purpose": "This is a test radar."}
 
-    response = client.post("/api/radars", json=radar_payload)
+    response = client.post("/api/v1/radars", json=radar_payload)
     assert response.status_code == HTTPStatus.CREATED
 
     body = response.json()

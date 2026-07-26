@@ -93,7 +93,7 @@ def init_client(dependencies: Dependencies) -> TestClient:
     """Initialize test client."""
     app = FastAPI(title="TEST API")
     register_exception_handlers(app)
-    app.include_router(api_router, prefix="/api")
+    app.include_router(api_router, prefix="/api/v1")
 
     app.dependency_overrides[get_settings] = dependencies.settings_factory
 
