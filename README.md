@@ -75,8 +75,8 @@ make up-schema
 | `make up-schema` | Upgrade schema to head |
 | `make down-schema` | Downgrade schema by one version |
 
-The API health check is served at `GET /api/health`. In development the frontend proxies
-`/api` to the backend on port 8000.
+The API health check is served at `GET /api/v1/health`. In development the frontend proxies
+`/api/v1` to the backend on port 8000.
 
 ## Configuration
 

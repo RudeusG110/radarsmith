@@ -5,9 +5,9 @@ import { defineConfig } from "vite";
 export default defineConfig({
     plugins: [react()],
     server: {
-        // Forward /api calls to the FastAPI backend during development.
+        // Forward /api/v1 calls to the FastAPI backend during development.
         proxy: {
-            "/api": "http://localhost:8000",
+            "/api/v1": "http://localhost:8000",
         },
     },
     test: {

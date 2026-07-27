@@ -127,14 +127,14 @@ The first API is intentionally resource-oriented:
 
 | Method and path | Purpose |
 | --- | --- |
-| `GET /api/radars` | List radars. |
-| `POST /api/radars` | Create a radar with the default structure. |
-| `GET /api/radars/{radar_id}` | Load one radar, its structure, and blips for the workspace. |
-| `PATCH /api/radars/{radar_id}` | Rename a radar or change its purpose. |
-| `DELETE /api/radars/{radar_id}` | Delete a radar and its contents. |
-| `POST /api/radars/{radar_id}/blips` | Add a placed blip. |
-| `PATCH /api/radars/{radar_id}/blips/{blip_id}` | Edit details or placement. |
-| `DELETE /api/radars/{radar_id}/blips/{blip_id}` | Delete a blip. |
+| `GET /api/v1/radars` | List radars. |
+| `POST /api/v1/radars` | Create a radar with the default structure. |
+| `GET /api/v1/radars/{radar_id}` | Load one radar, its structure, and blips for the workspace. |
+| `PATCH /api/v1/radars/{radar_id}` | Rename a radar or change its purpose. |
+| `DELETE /api/v1/radars/{radar_id}` | Delete a radar and its contents. |
+| `POST /api/v1/radars/{radar_id}/blips` | Add a placed blip. |
+| `PATCH /api/v1/radars/{radar_id}/blips/{blip_id}` | Edit details or placement. |
+| `DELETE /api/v1/radars/{radar_id}/blips/{blip_id}` | Delete a blip. |
 
 Quadrants and rings are returned as part of a radar but have no mutation endpoints in
 the MVP. Error responses use one consistent machine-readable shape. FastAPI's OpenAPI
