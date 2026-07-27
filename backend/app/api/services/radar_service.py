@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from uuid import UUID
 
 from app.context.app_context import AppContext
@@ -7,7 +8,7 @@ from app.crud.ring import RingDb
 from app.domain.constants import DEFAULT_QUADRANTS, DEFAULT_RINGS
 from app.domain.exceptions import RadarNotFoundError
 from app.models.models import Radar
-from app.schemas.radar import RadarPost
+from app.schemas.radar import RadarPatch, RadarPost
 
 
 class RadarService:
@@ -40,3 +41,29 @@ class RadarService:
         if radar is None:
             raise RadarNotFoundError(str(radar_id))
         return radar
+
+    def update_radar(self, radar_id: UUID, radar_patch: RadarPatch) -> Radar:
+        """Update a radar by ID, applying only the fields the client sent."""
+        radar = self.__radar_db.get_by_id(radar_id)
+        if radar is None:
+            raise RadarNotFoundError(str(radar_id))
+
+        fields = radar_patch.model_dump(exclude_unset=True)
+        if fields.get("name") is not None:
+            radar.name = fields["name"]
+        if "purpose" in fields:
+            radar.purpose = fields["purpose"]
+
+        radar.updated_at = datetime.now(UTC)
+        self.__ctx.db.commit()
+        self.__ctx.db.refresh(radar)
+        return radar
+
+    def delete_radar(self, radar_id: UUID) -> None:
+        """Delete a radar by ID."""
+        radar = self.__radar_db.get_by_id(radar_id)
+        if radar is None:
+            raise RadarNotFoundError(str(radar_id))
+
+        self.__ctx.db.delete(radar)
+        self.__ctx.db.commit()
