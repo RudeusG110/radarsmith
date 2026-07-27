@@ -1,6 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
+from app.schemas.blip import BlipOut
 from app.schemas.quadrant import QuadrantOut
 from app.schemas.ring import RingOut
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -19,7 +20,17 @@ class RadarPost(BaseModel):
         return stripped
 
 
-class RadarOut(BaseModel):
+class RadarSummaryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    purpose: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class RadarDetailOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
@@ -29,3 +40,4 @@ class RadarOut(BaseModel):
     updated_at: datetime
     quadrants: list[QuadrantOut] = []
     rings: list[RingOut] = []
+    blips: list[BlipOut] = []

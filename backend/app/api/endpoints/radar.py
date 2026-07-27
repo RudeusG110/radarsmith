@@ -6,30 +6,30 @@ from starlette.status import HTTP_201_CREATED
 
 from app.api.services.radar_service import RadarService
 from app.context.app_context import AppContext, get_app_context
-from app.schemas.radar import RadarOut, RadarPost
+from app.schemas.radar import RadarDetailOut, RadarPost, RadarSummaryOut
 
 router = APIRouter(prefix="/radars")
 
 
 @router.post("", status_code=HTTP_201_CREATED, description="Create a new radar")
-def create_radar(app_context: Annotated[AppContext, Depends(get_app_context)], radar_post: RadarPost) -> RadarOut:
+def create_radar(app_context: Annotated[AppContext, Depends(get_app_context)], radar_post: RadarPost) -> RadarDetailOut:
     """Create a new radar."""
     radar_api = RadarService(app_context)
     radar = radar_api.create_radar(radar_post)
-    return RadarOut.model_validate(radar)
+    return RadarDetailOut.model_validate(radar)
 
 
 @router.get("", description="Get all radars")
-def get_radars(app_context: Annotated[AppContext, Depends(get_app_context)]) -> list[RadarOut]:
+def get_radars(app_context: Annotated[AppContext, Depends(get_app_context)]) -> list[RadarSummaryOut]:
     """Get all radars."""
     radar_api = RadarService(app_context)
     radars = radar_api.get_radars()
-    return [RadarOut.model_validate(radar) for radar in radars]
+    return [RadarSummaryOut.model_validate(radar) for radar in radars]
 
 
 @router.get("/{radar_id}", description="Get a radar by ID")
-def get_radar(app_context: Annotated[AppContext, Depends(get_app_context)], radar_id: UUID) -> RadarOut:
+def get_radar(app_context: Annotated[AppContext, Depends(get_app_context)], radar_id: UUID) -> RadarDetailOut:
     """Get a radar by ID."""
     radar_api = RadarService(app_context)
-    radar = radar_api.get_radar(str(radar_id))
-    return RadarOut.model_validate(radar)
+    radar = radar_api.get_radar(radar_id)
+    return RadarDetailOut.model_validate(radar)
