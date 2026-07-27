@@ -55,3 +55,12 @@ class RadarService:
         self.__ctx.db.commit()
         self.__ctx.db.refresh(radar)
         return radar
+
+    def delete_radar(self, radar_id: UUID) -> None:
+        """Delete a radar by ID."""
+        radar = self.__radar_db.get_by_id(radar_id)
+        if radar is None:
+            raise RadarNotFoundError(str(radar_id))
+
+        self.__ctx.db.delete(radar)
+        self.__ctx.db.commit()

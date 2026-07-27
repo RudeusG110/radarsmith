@@ -197,3 +197,111 @@ def test_update_radar_no_changes(client: TestClient) -> None:
     assert updated_radar["id"] == radar_id
     assert updated_radar["name"] == "Radar to Update"  # Name remains unchanged
     assert updated_radar["purpose"] == "Initial purpose."  # Purpose remains unchanged
+
+
+def test_delete_radar(client: TestClient) -> None:
+    radar_payload = {"name": "Radar to Delete", "purpose": "This radar will be deleted."}
+    create_response = client.post("/api/v1/radars", json=radar_payload)
+    radar_id = create_response.json()["id"]
+
+    delete_response = client.delete(f"/api/v1/radars/{radar_id}")
+    assert delete_response.status_code == HTTPStatus.OK
+
+    # Verify that the radar is no longer retrievable
+    get_response = client.get(f"/api/v1/radars/{radar_id}")
+    assert get_response.status_code == HTTPStatus.NOT_FOUND
+
+
+def test_delete_radar_not_found(client: TestClient) -> None:
+    response = client.delete(f"/api/v1/radars/{MISSING_ID}")
+    assert response.status_code == HTTPStatus.NOT_FOUND
+
+    error = response.json()["error"]
+    assert error["code"] == "not_found"
+    assert error["message"] == f"Radar with ID {MISSING_ID} not found."
+
+
+def test_delete_radar_invalid_uuid(client: TestClient) -> None:
+    response = client.delete("/api/v1/radars/invalid-uuid")
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert "Input should be a valid UUID" in response.json()["detail"][0]["msg"]
+
+
+def test_delete_radar_cascade(client: TestClient, context: AppContext) -> None:
+    radar_payload = {"name": "Radar to Delete with Blips", "purpose": "This radar will be deleted along with its blips."}
+    create_response = client.post("/api/v1/radars", json=radar_payload)
+    radar_id = create_response.json()["id"]
+
+    # Add a blip to the radar
+    quadrant = context.db.scalars(select(RadarQuadrant).where(RadarQuadrant.radar_id == UUID(radar_id))).first()
+    ring = context.db.scalars(select(RadarRing).where(RadarRing.radar_id == UUID(radar_id))).first()
+    assert quadrant is not None
+    assert ring is not None
+
+    blip = RadarBlip(radar_id=UUID(radar_id), quadrant_id=quadrant.id, ring_id=ring.id, name="Test Blip", description="A test blip.")
+    context.db.add(blip)
+    context.db.commit()
+
+    # Delete the radar
+    delete_response = client.delete(f"/api/v1/radars/{radar_id}")
+    assert delete_response.status_code == HTTPStatus.OK
+
+    # Verify that the radar is no longer retrievable
+    get_response = client.get(f"/api/v1/radars/{radar_id}")
+    assert get_response.status_code == HTTPStatus.NOT_FOUND
+
+    # Verify that the blip is also deleted
+    blip_exists = context.db.query(RadarBlip).filter_by(id=blip.id).first()
+    assert blip_exists is None
+
+
+def test_delete_radar_cascade_quadrants_and_rings(client: TestClient, context: AppContext) -> None:
+    radar_payload = {
+        "name": "Radar to Delete with Quadrants and Rings",
+        "purpose": "This radar will be deleted along with its quadrants and rings.",
+    }
+    create_response = client.post("/api/v1/radars", json=radar_payload)
+    radar_id = create_response.json()["id"]
+
+    # Add a quadrant and a ring to the radar
+    quadrant = RadarQuadrant(radar_id=UUID(radar_id), name="Test Quadrant", position=1)
+    ring = RadarRing(radar_id=UUID(radar_id), name="Test Ring", position=1)
+    context.db.add_all([quadrant, ring])
+    context.db.commit()
+
+    # Delete the radar
+    delete_response = client.delete(f"/api/v1/radars/{radar_id}")
+    assert delete_response.status_code == HTTPStatus.OK
+
+    # Verify that the radar is no longer retrievable
+    get_response = client.get(f"/api/v1/radars/{radar_id}")
+    assert get_response.status_code == HTTPStatus.NOT_FOUND
+
+    # Verify that the quadrant and ring are also deleted
+    quadrant_exists = context.db.query(RadarQuadrant).filter_by(id=quadrant.id).first()
+    ring_exists = context.db.query(RadarRing).filter_by(id=ring.id).first()
+    assert quadrant_exists is None
+    assert ring_exists is None
+
+
+def test_delete_radar_no_cascade_on_other_radars(client: TestClient, context: AppContext) -> None:
+    radar_payload_1 = {"name": "Radar 1", "purpose": "First radar."}
+    radar_payload_2 = {"name": "Radar 2", "purpose": "Second radar."}
+
+    create_response_1 = client.post("/api/v1/radars", json=radar_payload_1)
+    create_response_2 = client.post("/api/v1/radars", json=radar_payload_2)
+
+    radar_id_1 = create_response_1.json()["id"]
+    radar_id_2 = create_response_2.json()["id"]
+
+    # Delete the first radar
+    delete_response = client.delete(f"/api/v1/radars/{radar_id_1}")
+    assert delete_response.status_code == HTTPStatus.OK
+
+    # Verify that the first radar is no longer retrievable
+    get_response_1 = client.get(f"/api/v1/radars/{radar_id_1}")
+    assert get_response_1.status_code == HTTPStatus.NOT_FOUND
+
+    # Verify that the second radar is still retrievable
+    get_response_2 = client.get(f"/api/v1/radars/{radar_id_2}")
+    assert get_response_2.status_code == HTTPStatus.OK

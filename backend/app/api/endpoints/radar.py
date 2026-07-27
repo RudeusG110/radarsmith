@@ -41,3 +41,10 @@ def update_radar(app_context: Annotated[AppContext, Depends(get_app_context)], r
     radar_api = RadarService(app_context)
     radar = radar_api.update_radar(radar_id, radar_patch)
     return RadarDetailOut.model_validate(radar)
+
+
+@router.delete("/{radar_id}", description="Delete a radar by ID")
+def delete_radar(app_context: Annotated[AppContext, Depends(get_app_context)], radar_id: UUID) -> None:
+    """Delete a radar by ID."""
+    radar_api = RadarService(app_context)
+    radar_api.delete_radar(radar_id)
