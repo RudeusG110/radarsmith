@@ -6,7 +6,7 @@ from starlette.status import HTTP_201_CREATED
 
 from app.api.services.radar_service import RadarService
 from app.context.app_context import AppContext, get_app_context
-from app.schemas.radar import RadarDetailOut, RadarPost, RadarSummaryOut
+from app.schemas.radar import RadarDetailOut, RadarPatch, RadarPost, RadarSummaryOut
 
 router = APIRouter(prefix="/radars")
 
@@ -32,4 +32,12 @@ def get_radar(app_context: Annotated[AppContext, Depends(get_app_context)], rada
     """Get a radar by ID."""
     radar_api = RadarService(app_context)
     radar = radar_api.get_radar(radar_id)
+    return RadarDetailOut.model_validate(radar)
+
+
+@router.patch("/{radar_id}", description="Update a radar by ID")
+def update_radar(app_context: Annotated[AppContext, Depends(get_app_context)], radar_id: UUID, radar_patch: RadarPatch) -> RadarDetailOut:
+    """Update a radar by ID."""
+    radar_api = RadarService(app_context)
+    radar = radar_api.update_radar(radar_id, radar_patch)
     return RadarDetailOut.model_validate(radar)

@@ -7,7 +7,7 @@ from app.crud.ring import RingDb
 from app.domain.constants import DEFAULT_QUADRANTS, DEFAULT_RINGS
 from app.domain.exceptions import RadarNotFoundError
 from app.models.models import Radar
-from app.schemas.radar import RadarPost
+from app.schemas.radar import RadarPatch, RadarPost
 
 
 class RadarService:
@@ -39,4 +39,19 @@ class RadarService:
         radar = self.__radar_db.get_by_id(radar_id)
         if radar is None:
             raise RadarNotFoundError(str(radar_id))
+        return radar
+
+    def update_radar(self, radar_id: UUID, radar_patch: RadarPatch) -> Radar:
+        """Update a radar by ID."""
+        radar = self.__radar_db.get_by_id(radar_id)
+        if radar is None:
+            raise RadarNotFoundError(str(radar_id))
+
+        if radar_patch.name is not None:
+            radar.name = radar_patch.name
+        if radar_patch.purpose is not None:
+            radar.purpose = radar_patch.purpose
+
+        self.__ctx.db.commit()
+        self.__ctx.db.refresh(radar)
         return radar

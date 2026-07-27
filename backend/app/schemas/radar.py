@@ -20,6 +20,21 @@ class RadarPost(BaseModel):
         return stripped
 
 
+class RadarPatch(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    purpose: str | None = Field(default=None, max_length=1000)
+
+    @field_validator("name")
+    @classmethod
+    def name_must_not_be_blank(cls, value: str | None) -> str | None:
+        if value is not None:
+            stripped = value.strip()
+            if not stripped:
+                raise ValueError("name must not be blank")
+            return stripped
+        return value
+
+
 class RadarSummaryOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

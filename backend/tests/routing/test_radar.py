@@ -9,6 +9,8 @@ from fastapi.testclient import TestClient
 from lib.query_counter import count_queries
 from sqlalchemy import Engine, select
 
+MISSING_ID = "c22e9817-d6ff-472a-b5a4-0a521366bb21"
+
 
 def test_create_radar(client: TestClient) -> None:
     radar_payload = {"name": "Test Radar", "purpose": "This is a test radar."}
@@ -80,13 +82,12 @@ def test_get_radar_by_id(client: TestClient) -> None:
 
 
 def test_get_radar_by_id_not_found(client: TestClient) -> None:
-    missing_id = "c22e9817-d6ff-472a-b5a4-0a521366bb21"
-    response = client.get(f"/api/v1/radars/{missing_id}")
+    response = client.get(f"/api/v1/radars/{MISSING_ID}")
     assert response.status_code == HTTPStatus.NOT_FOUND
 
     error = response.json()["error"]
     assert error["code"] == "not_found"
-    assert error["message"] == f"Radar with ID {missing_id} not found."
+    assert error["message"] == f"Radar with ID {MISSING_ID} not found."
 
 
 def test_get_radar_by_id_invalid_uuid(client: TestClient) -> None:
@@ -122,3 +123,77 @@ def test_get_radar_by_id_avoids_n_plus_one(client: TestClient, context: AppConte
     blips = cast(list[dict[str, Any]], response.json()["blips"])
     assert len(blips) == 10
     assert counter.count <= 6  # Constant query count; a per-blip N+1 would far exceed this
+
+
+def test_update_radar(client: TestClient) -> None:
+    radar_payload = {"name": "Radar to Update", "purpose": "Initial purpose."}
+    create_response = client.post("/api/v1/radars", json=radar_payload)
+    radar_id = create_response.json()["id"]
+
+    update_payload = {"name": "Updated Radar Name", "purpose": "Updated purpose."}
+    update_response = client.patch(f"/api/v1/radars/{radar_id}", json=update_payload)
+
+    assert update_response.status_code == HTTPStatus.OK
+    updated_radar = update_response.json()
+    assert updated_radar["id"] == radar_id
+    assert updated_radar["name"] == "Updated Radar Name"
+    assert updated_radar["purpose"] == "Updated purpose."
+
+
+def test_update_radar_not_found(client: TestClient) -> None:
+    update_payload = {"name": "Non-existent Radar", "purpose": "This radar does not exist."}
+    response = client.patch(f"/api/v1/radars/{MISSING_ID}", json=update_payload)
+
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    error = response.json()["error"]
+    assert error["code"] == "not_found"
+    assert error["message"] == f"Radar with ID {MISSING_ID} not found."
+
+
+def test_update_radar_invalid_uuid(client: TestClient) -> None:
+    update_payload = {"name": "Invalid UUID Radar", "purpose": "Testing invalid UUID."}
+    response = client.patch("/api/v1/radars/invalid-uuid", json=update_payload)
+
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert "Input should be a valid UUID" in response.json()["detail"][0]["msg"]
+
+
+def test_update_radar_blank_name(client: TestClient) -> None:
+    radar_payload = {"name": "Radar to Update", "purpose": "Initial purpose."}
+    create_response = client.post("/api/v1/radars", json=radar_payload)
+    radar_id = create_response.json()["id"]
+
+    update_payload = {"name": "   ", "purpose": "Updated purpose."}
+    response = client.patch(f"/api/v1/radars/{radar_id}", json=update_payload)
+
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+def test_update_radar_partial_update(client: TestClient) -> None:
+    radar_payload = {"name": "Radar to Update", "purpose": "Initial purpose."}
+    create_response = client.post("/api/v1/radars", json=radar_payload)
+    radar_id = create_response.json()["id"]
+
+    update_payload = {"purpose": "Updated purpose only."}
+    update_response = client.patch(f"/api/v1/radars/{radar_id}", json=update_payload)
+
+    assert update_response.status_code == HTTPStatus.OK
+    updated_radar = update_response.json()
+    assert updated_radar["id"] == radar_id
+    assert updated_radar["name"] == "Radar to Update"  # Name remains unchanged
+    assert updated_radar["purpose"] == "Updated purpose only."
+
+
+def test_update_radar_no_changes(client: TestClient) -> None:
+    radar_payload = {"name": "Radar to Update", "purpose": "Initial purpose."}
+    create_response = client.post("/api/v1/radars", json=radar_payload)
+    radar_id = create_response.json()["id"]
+
+    update_payload = {}  # No changes provided
+    update_response = client.patch(f"/api/v1/radars/{radar_id}", json=update_payload)
+
+    assert update_response.status_code == HTTPStatus.OK
+    updated_radar = update_response.json()
+    assert updated_radar["id"] == radar_id
+    assert updated_radar["name"] == "Radar to Update"  # Name remains unchanged
+    assert updated_radar["purpose"] == "Initial purpose."  # Purpose remains unchanged
