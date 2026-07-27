@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends
 from starlette.status import HTTP_201_CREATED
@@ -15,4 +16,20 @@ def create_radar(app_context: Annotated[AppContext, Depends(get_app_context)], r
     """Create a new radar."""
     radar_api = RadarService(app_context)
     radar = radar_api.create_radar(radar_post)
+    return RadarOut.model_validate(radar)
+
+
+@router.get("", description="Get all radars")
+def get_radars(app_context: Annotated[AppContext, Depends(get_app_context)]) -> list[RadarOut]:
+    """Get all radars."""
+    radar_api = RadarService(app_context)
+    radars = radar_api.get_radars()
+    return [RadarOut.model_validate(radar) for radar in radars]
+
+
+@router.get("/{radar_id}", description="Get a radar by ID")
+def get_radar(app_context: Annotated[AppContext, Depends(get_app_context)], radar_id: UUID) -> RadarOut:
+    """Get a radar by ID."""
+    radar_api = RadarService(app_context)
+    radar = radar_api.get_radar(str(radar_id))
     return RadarOut.model_validate(radar)

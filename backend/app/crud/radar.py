@@ -14,3 +14,11 @@ class RadarDb:
         self.__db.flush()
         self.__db.refresh(radar)
         return radar
+
+    def get_all(self) -> list[Radar]:
+        """Get all radars."""
+        return self.__db.query(Radar).order_by(Radar.created_at.desc()).all()
+
+    def get_by_id(self, radar_id: str) -> Radar | None:
+        """Get a radar by ID."""
+        return self.__db.query(Radar).get(radar_id)
