@@ -274,7 +274,7 @@ def test_delete_radar_cascades_to_children(client: TestClient, context: AppConte
     assert context.db.get(RadarRing, ring_id) is None
 
 
-def test_delete_radar_no_cascade_on_other_radars(client: TestClient, context: AppContext) -> None:
+def test_delete_radar_no_cascade_on_other_radars(client: TestClient) -> None:
     radar_payload_1 = {"name": "Radar 1", "purpose": "First radar."}
     radar_payload_2 = {"name": "Radar 2", "purpose": "Second radar."}
 
