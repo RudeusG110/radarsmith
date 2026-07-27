@@ -128,16 +128,17 @@ def test_get_radar_by_id_avoids_n_plus_one(client: TestClient, context: AppConte
 def test_update_radar(client: TestClient) -> None:
     radar_payload = {"name": "Radar to Update", "purpose": "Initial purpose."}
     create_response = client.post("/api/v1/radars", json=radar_payload)
-    radar_id = create_response.json()["id"]
+    created = create_response.json()
 
     update_payload = {"name": "Updated Radar Name", "purpose": "Updated purpose."}
-    update_response = client.patch(f"/api/v1/radars/{radar_id}", json=update_payload)
+    update_response = client.patch(f"/api/v1/radars/{created['id']}", json=update_payload)
 
     assert update_response.status_code == HTTPStatus.OK
     updated_radar = update_response.json()
-    assert updated_radar["id"] == radar_id
+    assert updated_radar["id"] == created["id"]
     assert updated_radar["name"] == "Updated Radar Name"
     assert updated_radar["purpose"] == "Updated purpose."
+    assert updated_radar["updated_at"] > created["updated_at"]
 
 
 def test_update_radar_not_found(client: TestClient) -> None:
@@ -199,13 +200,26 @@ def test_update_radar_no_changes(client: TestClient) -> None:
     assert updated_radar["purpose"] == "Initial purpose."  # Purpose remains unchanged
 
 
+def test_update_radar_clears_purpose(client: TestClient) -> None:
+    radar_payload = {"name": "Radar to Update", "purpose": "Initial purpose."}
+    create_response = client.post("/api/v1/radars", json=radar_payload)
+    radar_id = create_response.json()["id"]
+
+    update_response = client.patch(f"/api/v1/radars/{radar_id}", json={"purpose": None})
+
+    assert update_response.status_code == HTTPStatus.OK
+    updated_radar = update_response.json()
+    assert updated_radar["name"] == "Radar to Update"  # Name remains unchanged
+    assert updated_radar["purpose"] is None  # Purpose explicitly cleared
+
+
 def test_delete_radar(client: TestClient) -> None:
     radar_payload = {"name": "Radar to Delete", "purpose": "This radar will be deleted."}
     create_response = client.post("/api/v1/radars", json=radar_payload)
     radar_id = create_response.json()["id"]
 
     delete_response = client.delete(f"/api/v1/radars/{radar_id}")
-    assert delete_response.status_code == HTTPStatus.OK
+    assert delete_response.status_code == HTTPStatus.NO_CONTENT
 
     # Verify that the radar is no longer retrievable
     get_response = client.get(f"/api/v1/radars/{radar_id}")
@@ -227,61 +241,37 @@ def test_delete_radar_invalid_uuid(client: TestClient) -> None:
     assert "Input should be a valid UUID" in response.json()["detail"][0]["msg"]
 
 
-def test_delete_radar_cascade(client: TestClient, context: AppContext) -> None:
-    radar_payload = {"name": "Radar to Delete with Blips", "purpose": "This radar will be deleted along with its blips."}
+def test_delete_radar_cascades_to_children(client: TestClient, context: AppContext) -> None:
+    radar_payload = {"name": "Radar to Delete with Children", "purpose": "Deleted with its structure and blips."}
     create_response = client.post("/api/v1/radars", json=radar_payload)
-    radar_id = create_response.json()["id"]
+    radar_id = cast(str, create_response.json()["id"])
 
-    # Add a blip to the radar
+    # Use the radar's default quadrant and ring, and attach a blip
     quadrant = context.db.scalars(select(RadarQuadrant).where(RadarQuadrant.radar_id == UUID(radar_id))).first()
     ring = context.db.scalars(select(RadarRing).where(RadarRing.radar_id == UUID(radar_id))).first()
     assert quadrant is not None
     assert ring is not None
+    quadrant_id = quadrant.id
+    ring_id = ring.id
 
-    blip = RadarBlip(radar_id=UUID(radar_id), quadrant_id=quadrant.id, ring_id=ring.id, name="Test Blip", description="A test blip.")
+    blip = RadarBlip(radar_id=UUID(radar_id), quadrant_id=quadrant_id, ring_id=ring_id, name="Test Blip", description="A test blip.")
     context.db.add(blip)
     context.db.commit()
+    blip_id = blip.id
 
     # Delete the radar
     delete_response = client.delete(f"/api/v1/radars/{radar_id}")
-    assert delete_response.status_code == HTTPStatus.OK
+    assert delete_response.status_code == HTTPStatus.NO_CONTENT
 
     # Verify that the radar is no longer retrievable
     get_response = client.get(f"/api/v1/radars/{radar_id}")
     assert get_response.status_code == HTTPStatus.NOT_FOUND
 
-    # Verify that the blip is also deleted
-    blip_exists = context.db.query(RadarBlip).filter_by(id=blip.id).first()
-    assert blip_exists is None
-
-
-def test_delete_radar_cascade_quadrants_and_rings(client: TestClient, context: AppContext) -> None:
-    radar_payload = {
-        "name": "Radar to Delete with Quadrants and Rings",
-        "purpose": "This radar will be deleted along with its quadrants and rings.",
-    }
-    create_response = client.post("/api/v1/radars", json=radar_payload)
-    radar_id = create_response.json()["id"]
-
-    # Add a quadrant and a ring to the radar
-    quadrant = RadarQuadrant(radar_id=UUID(radar_id), name="Test Quadrant", position=1)
-    ring = RadarRing(radar_id=UUID(radar_id), name="Test Ring", position=1)
-    context.db.add_all([quadrant, ring])
-    context.db.commit()
-
-    # Delete the radar
-    delete_response = client.delete(f"/api/v1/radars/{radar_id}")
-    assert delete_response.status_code == HTTPStatus.OK
-
-    # Verify that the radar is no longer retrievable
-    get_response = client.get(f"/api/v1/radars/{radar_id}")
-    assert get_response.status_code == HTTPStatus.NOT_FOUND
-
-    # Verify that the quadrant and ring are also deleted
-    quadrant_exists = context.db.query(RadarQuadrant).filter_by(id=quadrant.id).first()
-    ring_exists = context.db.query(RadarRing).filter_by(id=ring.id).first()
-    assert quadrant_exists is None
-    assert ring_exists is None
+    # Verify that its blip, quadrant, and ring are all deleted
+    context.db.expire_all()
+    assert context.db.get(RadarBlip, blip_id) is None
+    assert context.db.get(RadarQuadrant, quadrant_id) is None
+    assert context.db.get(RadarRing, ring_id) is None
 
 
 def test_delete_radar_no_cascade_on_other_radars(client: TestClient, context: AppContext) -> None:
@@ -296,7 +286,7 @@ def test_delete_radar_no_cascade_on_other_radars(client: TestClient, context: Ap
 
     # Delete the first radar
     delete_response = client.delete(f"/api/v1/radars/{radar_id_1}")
-    assert delete_response.status_code == HTTPStatus.OK
+    assert delete_response.status_code == HTTPStatus.NO_CONTENT
 
     # Verify that the first radar is no longer retrievable
     get_response_1 = client.get(f"/api/v1/radars/{radar_id_1}")

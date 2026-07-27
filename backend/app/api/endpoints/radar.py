@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from starlette.status import HTTP_201_CREATED
+from starlette.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from app.api.services.radar_service import RadarService
 from app.context.app_context import AppContext, get_app_context
@@ -43,7 +43,7 @@ def update_radar(app_context: Annotated[AppContext, Depends(get_app_context)], r
     return RadarDetailOut.model_validate(radar)
 
 
-@router.delete("/{radar_id}", description="Delete a radar by ID")
+@router.delete("/{radar_id}", status_code=HTTP_204_NO_CONTENT, description="Delete a radar by ID")
 def delete_radar(app_context: Annotated[AppContext, Depends(get_app_context)], radar_id: UUID) -> None:
     """Delete a radar by ID."""
     radar_api = RadarService(app_context)
