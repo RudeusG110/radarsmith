@@ -44,8 +44,16 @@ def prepare_template_db() -> Generator[None]:
 
 
 @pytest.fixture(autouse=True)
-def setup_module(context: AppContext) -> Generator[None]:
-    """Initialize base tables for all tests by default."""
+def setup_module(request: pytest.FixtureRequest, context: AppContext) -> Generator[None]:
+    """Initialize base tables for all tests by default.
+
+    Tests marked with ``@pytest.mark.no_base_tables`` start from an empty schema
+    so they can assert behaviour against a database with no seeded radars.
+    """
+    if request.node.get_closest_marker("no_base_tables") is not None:
+        yield
+        return
+
     db_helper = DatabaseHelper(context)
     db_helper.load_data(BASE_TABLES)
     yield

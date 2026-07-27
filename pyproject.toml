@@ -30,6 +30,9 @@ dev = [
 [tool.pytest.ini_options]
 pythonpath = ["backend"]
 testpaths = ["backend/tests"]
+markers = [
+    "no_base_tables: start the test from an empty schema without the seeded base tables",
+]
 
 [tool.coverage.run]
 omit = ["backend/alembic/env.py", "backend/tests/**/conftest.py"]
