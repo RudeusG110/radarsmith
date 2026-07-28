@@ -40,6 +40,13 @@ class BlipService:
 
         return self.__blip_db.update(blip, blip_patch)
 
+    def delete_blip(self, radar_id: UUID, blip_id: UUID) -> None:
+        """Delete a blip that belongs to the radar."""
+        blip = self.__blip_db.get_for_radar(radar_id, blip_id)
+        if blip is None:
+            raise BlipNotFoundError(str(blip_id))
+        self.__blip_db.delete(blip)
+
     def __require_quadrant(self, radar_id: UUID, quadrant_id: UUID) -> None:
         if self.__quadrant_db.get_for_radar(radar_id, quadrant_id) is None:
             raise QuadrantNotFoundError(str(quadrant_id))

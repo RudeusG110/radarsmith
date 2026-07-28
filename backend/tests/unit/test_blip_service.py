@@ -134,3 +134,58 @@ def test_update_blip_invalid_placement_leaves_blip_unchanged(context: AppContext
     context.db.refresh(blip)
     assert blip.name == "Original"
     assert blip.quadrant_id == quadrants[0]
+
+
+def test_delete_blip_removes_blip(context: AppContext) -> None:
+    radar_id, quadrants, rings = _seed_radar(context)
+    blip = BlipService(context).create_blip(radar_id, _blip_post(quadrants[0], rings[0]))
+    assert _count(context, RadarBlip) == 1
+
+    BlipService(context).delete_blip(radar_id, blip.id)
+
+    assert _count(context, RadarBlip) == 0
+
+
+def test_delete_blip_not_found(context: AppContext) -> None:
+    radar_id, _, _ = _seed_radar(context)
+
+    with pytest.raises(BlipNotFoundError):
+        BlipService(context).delete_blip(radar_id, uuid4())
+
+
+def test_delete_blip_not_in_radar(context: AppContext) -> None:
+    radar_id, quadrants, rings = _seed_radar(context, name="Owner")
+    other_radar_id, _, _ = _seed_radar(context, name="Other")
+    blip = BlipService(context).create_blip(radar_id, _blip_post(quadrants[0], rings[0]))
+
+    with pytest.raises(BlipNotFoundError):
+        BlipService(context).delete_blip(other_radar_id, blip.id)
+
+    assert _count(context, RadarBlip) == 1  # blip preserved
+
+
+def test_delete_blip_leaves_other_blips(context: AppContext) -> None:
+    radar_id, quadrants, rings = _seed_radar(context)
+    kept = BlipService(context).create_blip(radar_id, _blip_post(quadrants[0], rings[0], name="Keep"))
+    removed = BlipService(context).create_blip(radar_id, _blip_post(quadrants[1], rings[1], name="Remove"))
+
+    BlipService(context).delete_blip(radar_id, removed.id)
+
+    remaining = context.db.scalars(select(RadarBlip)).all()
+    assert [blip.id for blip in remaining] == [kept.id]
+
+
+def test_delete_blip_rolls_back_on_db_failure(context: AppContext) -> None:
+    radar_id, quadrants, rings = _seed_radar(context)
+    blip = BlipService(context).create_blip(radar_id, _blip_post(quadrants[0], rings[0]))
+
+    with patch("app.api.services.blip_service.BlipDb") as blip_db_type:
+        blip_db_type.return_value.get_for_radar.return_value = blip
+        blip_db_type.return_value.delete.side_effect = RuntimeError("delete failed")
+
+        with pytest.raises(RuntimeError):
+            BlipService(context).delete_blip(radar_id, blip.id)
+
+    context.db.rollback()
+
+    assert _count(context, RadarBlip) == 1
