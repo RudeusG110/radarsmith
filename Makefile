@@ -1,4 +1,4 @@
-.PHONY: setup dev test lint format typecheck build db-up db-down db-reset \
+.PHONY: setup dev test lint format typecheck build db-up db-down db-reset export-openapi \
 	fe-setup fe-dev fe-test fe-lint fe-typecheck fe-build
 
 
@@ -25,6 +25,10 @@ format:
 
 typecheck:
 	poetry run pyright
+
+# Export the OpenAPI document deterministically to backend/openapi.json
+export-openapi:
+	cd backend && poetry run python -m scripts.export_openapi
 
 # Database commands for managing the PostgreSQL database using Docker Compose
 db-up:

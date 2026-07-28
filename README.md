@@ -64,6 +64,7 @@ make up-schema
 | `make lint` | Run Ruff lint checks |
 | `make format` | Apply Ruff formatting |
 | `make typecheck` | Run Pyright in strict mode |
+| `make export-openapi` | Export the OpenAPI document to `backend/openapi.json` (deterministic) |
 | `make fe-dev` | Run the frontend dev server on http://localhost:5173 |
 | `make fe-test` | Run the frontend test suite (Vitest) |
 | `make fe-lint` | Run ESLint |

@@ -6,6 +6,14 @@ class NotFoundError(DomainError):
     """Base class for errors raised when a requested resource cannot be found."""
 
 
+class ConflictError(DomainError):
+    """Raised when a request conflicts with the current state of a resource."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+
 class RadarNotFoundError(NotFoundError):
     """Raised when a radar cannot be found by its identifier."""
 
