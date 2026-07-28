@@ -41,3 +41,7 @@ class BlipDb:
         """Get a blip by ID scoped to the radar it must belong to."""
         statement = select(RadarBlip).where(RadarBlip.id == blip_id, RadarBlip.radar_id == radar_id)
         return self.__db.scalars(statement).one_or_none()
+
+    def delete(self, blip: RadarBlip) -> None:
+        self.__db.delete(blip)
+        self.__db.commit()
