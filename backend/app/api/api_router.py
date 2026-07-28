@@ -1,7 +1,8 @@
 from fastapi import APIRouter
 
-from app.api.endpoints import health, radar
+from app.api.endpoints import blip, health, radar
 
 api_router = APIRouter()
 api_router.include_router(health.router, tags=["health"])
 api_router.include_router(radar.router, tags=["radars"])
+api_router.include_router(blip.router, tags=["blips"])
