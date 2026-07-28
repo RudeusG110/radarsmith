@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from typing import cast
 from uuid import UUID
 
 from app.context.app_context import AppContext
@@ -11,7 +12,7 @@ MISSING_ID = "c22e9817-d6ff-472a-b5a4-0a521366bb21"
 
 def _create_radar(client: TestClient, context: AppContext, name: str = "Blip radar") -> tuple[str, list[str], list[str]]:
     """Create a radar and return its ID with its ordered quadrant and ring IDs."""
-    radar_id = client.post("/api/v1/radars", json={"name": name}).json()["id"]
+    radar_id: str = client.post("/api/v1/radars", json={"name": name}).json()["id"]
 
     quadrants = context.db.scalars(
         select(RadarQuadrant).where(RadarQuadrant.radar_id == UUID(radar_id)).order_by(RadarQuadrant.position)
@@ -31,7 +32,7 @@ def test_create_blip(client: TestClient, context: AppContext) -> None:
     response = client.post(f"/api/v1/radars/{radar_id}/blips", json=_blip_payload(quadrants[0], rings[0]))
 
     assert response.status_code == HTTPStatus.CREATED
-    body = response.json()
+    body = cast(dict[str, str], response.json())
     assert UUID(body["id"])  # stable, valid UUID
     assert body["radar_id"] == radar_id
     assert body["quadrant_id"] == quadrants[0]

@@ -27,13 +27,13 @@ class BlipPatch(BaseModel):
 
     @field_validator("name", "description")
     @classmethod
-    def must_not_be_blank(cls, value: str | None) -> str | None:
-        if value is None:
-            return value
-        stripped = value.strip()
-        if not stripped:
+    def must_not_be_blank(cls, value: str | None) -> str:
+        # The validator only runs when the client sends the field, so an explicit
+        # null (which cannot clear a required column) is rejected while an omitted
+        # field is left untouched.
+        if value is None or not value.strip():
             raise ValueError("must not be blank")
-        return stripped
+        return value.strip()
 
 
 class BlipDetailOut(BaseModel):

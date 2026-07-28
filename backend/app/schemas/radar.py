@@ -26,13 +26,13 @@ class RadarPatch(BaseModel):
 
     @field_validator("name")
     @classmethod
-    def name_must_not_be_blank(cls, value: str | None) -> str | None:
-        if value is not None:
-            stripped = value.strip()
-            if not stripped:
-                raise ValueError("name must not be blank")
-            return stripped
-        return value
+    def name_must_not_be_blank(cls, value: str | None) -> str:
+        # The validator only runs when the client sends the field, so an explicit
+        # null (which cannot clear a required column) is rejected while an omitted
+        # name is left untouched.
+        if value is None or not value.strip():
+            raise ValueError("name must not be blank")
+        return value.strip()
 
 
 class RadarSummaryOut(BaseModel):

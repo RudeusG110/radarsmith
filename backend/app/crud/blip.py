@@ -1,15 +1,14 @@
-from datetime import UTC, datetime
-from typing import Any
 from uuid import UUID
 
 from app.context.app_context import AppContext
 from app.models.models import RadarBlip
-from app.schemas.blip import BlipPost
+from app.schemas.blip import BlipPatch, BlipPost
 from sqlalchemy import select
 
 
 class BlipDb:
     def __init__(self, ctx: AppContext) -> None:
+        self.__ctx = ctx
         self.__db = ctx.db
 
     def create(self, radar_id: UUID, quadrant_id: UUID, ring_id: UUID, blip_post: BlipPost) -> RadarBlip:
@@ -22,12 +21,13 @@ class BlipDb:
         self.__db.refresh(blip)
         return blip
 
-    def update(self, blip: RadarBlip, fields: dict[str, Any]) -> RadarBlip:
-        """Apply the provided fields to a blip and persist the change."""
-        for key, value in fields.items():
-            setattr(blip, key, value)
-
-        blip.updated_at = datetime.now(UTC)
+    def update(self, blip: RadarBlip, patch: BlipPatch) -> RadarBlip:
+        """Apply a partial update to a blip and persist the change."""
+        blip.name = patch.name or blip.name
+        blip.description = patch.description or blip.description
+        blip.quadrant_id = patch.quadrant_id or blip.quadrant_id
+        blip.ring_id = patch.ring_id or blip.ring_id
+        blip.updated_at = self.__ctx.now_utc()
         self.__db.commit()
         self.__db.refresh(blip)
         return blip

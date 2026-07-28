@@ -33,13 +33,12 @@ class BlipService:
         if blip is None:
             raise BlipNotFoundError(str(blip_id))
 
-        fields = blip_patch.model_dump(exclude_unset=True)
-        if "quadrant_id" in fields:
-            self.__require_quadrant(radar_id, fields["quadrant_id"])
-        if "ring_id" in fields:
-            self.__require_ring(radar_id, fields["ring_id"])
+        if blip_patch.quadrant_id is not None:
+            self.__require_quadrant(radar_id, blip_patch.quadrant_id)
+        if blip_patch.ring_id is not None:
+            self.__require_ring(radar_id, blip_patch.ring_id)
 
-        return self.__blip_db.update(blip, fields)
+        return self.__blip_db.update(blip, blip_patch)
 
     def __require_quadrant(self, radar_id: UUID, quadrant_id: UUID) -> None:
         if self.__quadrant_db.get_for_radar(radar_id, quadrant_id) is None:

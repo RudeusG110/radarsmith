@@ -1,4 +1,3 @@
-from datetime import UTC, datetime
 from uuid import UUID
 
 from app.context.app_context import AppContext
@@ -48,16 +47,7 @@ class RadarService:
         if radar is None:
             raise RadarNotFoundError(str(radar_id))
 
-        fields = radar_patch.model_dump(exclude_unset=True)
-        if fields.get("name") is not None:
-            radar.name = fields["name"]
-        if "purpose" in fields:
-            radar.purpose = fields["purpose"]
-
-        radar.updated_at = datetime.now(UTC)
-        self.__ctx.db.commit()
-        self.__ctx.db.refresh(radar)
-        return radar
+        return self.__radar_db.update(radar, radar_patch)
 
     def delete_radar(self, radar_id: UUID) -> None:
         """Delete a radar by ID."""
@@ -65,5 +55,4 @@ class RadarService:
         if radar is None:
             raise RadarNotFoundError(str(radar_id))
 
-        self.__ctx.db.delete(radar)
-        self.__ctx.db.commit()
+        self.__radar_db.delete(radar)
