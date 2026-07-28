@@ -6,16 +6,33 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 class BlipPost(BaseModel):
     name: str = Field(min_length=1, max_length=100)
-    description: str | None = Field(default=None, max_length=1000)
+    description: str = Field(min_length=1, max_length=1000)
     quadrant_id: UUID
     ring_id: UUID
 
-    @field_validator("name")
+    @field_validator("name", "description")
     @classmethod
-    def name_must_not_be_blank(cls, value: str) -> str:
+    def must_not_be_blank(cls, value: str) -> str:
         stripped = value.strip()
         if not stripped:
-            raise ValueError("name must not be blank")
+            raise ValueError("must not be blank")
+        return stripped
+
+
+class BlipPatch(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    description: str | None = Field(default=None, min_length=1, max_length=1000)
+    quadrant_id: UUID | None = None
+    ring_id: UUID | None = None
+
+    @field_validator("name", "description")
+    @classmethod
+    def must_not_be_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("must not be blank")
         return stripped
 
 
@@ -27,8 +44,9 @@ class BlipDetailOut(BaseModel):
     quadrant_id: UUID
     ring_id: UUID
     name: str
-    description: str | None = None
+    description: str
     created_at: datetime
+    updated_at: datetime
 
 
 class BlipOut(BaseModel):
