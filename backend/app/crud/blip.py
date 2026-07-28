@@ -43,5 +43,6 @@ class BlipDb:
         return self.__db.scalars(statement).one_or_none()
 
     def delete(self, blip: RadarBlip) -> None:
+        """Delete a blip and persist the change."""
         self.__db.delete(blip)
         self.__db.commit()

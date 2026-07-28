@@ -29,7 +29,7 @@ def update_blip(
     return BlipDetailOut.model_validate(blip)
 
 
-@router.delete("/{blip_id}", response_model=HTTP_204_NO_CONTENT, description="Delete a blip by id")
+@router.delete("/{blip_id}", status_code=HTTP_204_NO_CONTENT, description="Delete a blip by id")
 def delete_blip(app_context: Annotated[AppContext, Depends(get_app_context)], radar_id: UUID, blip_id: UUID) -> None:
     """Delete a blip from a radar."""
     service = BlipService(app_context)
