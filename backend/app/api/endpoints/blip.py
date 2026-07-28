@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from starlette.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
+from app.api.responses import IDENTIFIED_ERROR_RESPONSES
 from app.api.services.blip_service import BlipService
 from app.context.app_context import AppContext, get_app_context
 from app.schemas.blip import BlipDetailOut, BlipPatch, BlipPost
@@ -11,7 +12,7 @@ from app.schemas.blip import BlipDetailOut, BlipPatch, BlipPost
 router = APIRouter(prefix="/radars/{radar_id}/blips")
 
 
-@router.post("", status_code=HTTP_201_CREATED, description="Create a new blip for a radar")
+@router.post("", status_code=HTTP_201_CREATED, description="Create a new blip for a radar", responses=IDENTIFIED_ERROR_RESPONSES)
 def create_blip(app_context: Annotated[AppContext, Depends(get_app_context)], radar_id: UUID, blip_post: BlipPost) -> BlipDetailOut:
     """Create a new blip for a radar."""
     service = BlipService(app_context)
@@ -19,7 +20,7 @@ def create_blip(app_context: Annotated[AppContext, Depends(get_app_context)], ra
     return BlipDetailOut.model_validate(blip)
 
 
-@router.patch("/{blip_id}", description="Update a blip by ID")
+@router.patch("/{blip_id}", description="Update a blip by ID", responses=IDENTIFIED_ERROR_RESPONSES)
 def update_blip(
     app_context: Annotated[AppContext, Depends(get_app_context)], radar_id: UUID, blip_id: UUID, blip_patch: BlipPatch
 ) -> BlipDetailOut:
@@ -29,7 +30,7 @@ def update_blip(
     return BlipDetailOut.model_validate(blip)
 
 
-@router.delete("/{blip_id}", status_code=HTTP_204_NO_CONTENT, description="Delete a blip by id")
+@router.delete("/{blip_id}", status_code=HTTP_204_NO_CONTENT, description="Delete a blip by id", responses=IDENTIFIED_ERROR_RESPONSES)
 def delete_blip(app_context: Annotated[AppContext, Depends(get_app_context)], radar_id: UUID, blip_id: UUID) -> None:
     """Delete a blip from a radar."""
     service = BlipService(app_context)

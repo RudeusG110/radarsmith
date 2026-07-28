@@ -15,3 +15,6 @@ notes.md
 coverage.xml
 coverage.json
 .pytest_cache/
+
+# Generated artifact from `make export-openapi`
+backend/openapi.json

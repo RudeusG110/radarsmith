@@ -93,7 +93,9 @@ def test_get_radar_by_id_not_found(client: TestClient) -> None:
 def test_get_radar_by_id_invalid_uuid(client: TestClient) -> None:
     response = client.get("/api/v1/radars/invalid-uuid")
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-    assert "Input should be a valid UUID" in response.json()["detail"][0]["msg"]
+    body = response.json()
+    assert body["error"]["code"] == "validation_error"
+    assert "Input should be a valid UUID" in body["error"]["message"]
 
 
 def test_get_radar_by_id_avoids_n_plus_one(client: TestClient, context: AppContext) -> None:
@@ -156,7 +158,9 @@ def test_update_radar_invalid_uuid(client: TestClient) -> None:
     response = client.patch("/api/v1/radars/invalid-uuid", json=update_payload)
 
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-    assert "Input should be a valid UUID" in response.json()["detail"][0]["msg"]
+    body = response.json()
+    assert body["error"]["code"] == "validation_error"
+    assert "Input should be a valid UUID" in body["error"]["message"]
 
 
 def test_update_radar_blank_name(client: TestClient) -> None:
@@ -238,7 +242,9 @@ def test_delete_radar_not_found(client: TestClient) -> None:
 def test_delete_radar_invalid_uuid(client: TestClient) -> None:
     response = client.delete("/api/v1/radars/invalid-uuid")
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-    assert "Input should be a valid UUID" in response.json()["detail"][0]["msg"]
+    body = response.json()
+    assert body["error"]["code"] == "validation_error"
+    assert "Input should be a valid UUID" in body["error"]["message"]
 
 
 def test_delete_radar_cascades_to_children(client: TestClient, context: AppContext) -> None:
