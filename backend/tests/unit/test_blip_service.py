@@ -12,8 +12,8 @@ from app.schemas.radar import RadarPost
 from sqlalchemy import func, select
 
 
-def _count(context: AppContext, model: type[RadarBlip]) -> int:
-    return context.db.scalar(select(func.count()).select_from(model)) or 0
+def _count(context: AppContext, model: type[RadarBlip], radar_id: UUID) -> int:
+    return context.db.scalar(select(func.count()).select_from(model).where(model.radar_id == radar_id)) or 0
 
 
 def _seed_radar(context: AppContext, name: str = "Radar") -> tuple[UUID, list[UUID], list[UUID]]:
@@ -37,7 +37,7 @@ def test_create_blip_persists_with_placement(context: AppContext) -> None:
     assert blip.radar_id == radar_id
     assert blip.quadrant_id == quadrants[0]
     assert blip.ring_id == rings[0]
-    assert _count(context, RadarBlip) == 1
+    assert _count(context, RadarBlip, radar_id) == 1
 
 
 def test_create_blip_radar_not_found(context: AppContext) -> None:
@@ -54,7 +54,7 @@ def test_create_blip_quadrant_from_other_radar(context: AppContext) -> None:
     with pytest.raises(QuadrantNotFoundError):
         BlipService(context).create_blip(radar_id, _blip_post(other_quadrants[0], rings[0]))
 
-    assert _count(context, RadarBlip) == 0
+    assert _count(context, RadarBlip, radar_id) == 0
 
 
 def test_create_blip_ring_from_other_radar(context: AppContext) -> None:
@@ -64,7 +64,7 @@ def test_create_blip_ring_from_other_radar(context: AppContext) -> None:
     with pytest.raises(RingNotFoundError):
         BlipService(context).create_blip(radar_id, _blip_post(quadrants[0], other_rings[0]))
 
-    assert _count(context, RadarBlip) == 0
+    assert _count(context, RadarBlip, radar_id) == 0
 
 
 def test_create_blip_rolls_back_on_db_failure(context: AppContext) -> None:
@@ -78,7 +78,7 @@ def test_create_blip_rolls_back_on_db_failure(context: AppContext) -> None:
 
     context.db.rollback()
 
-    assert _count(context, RadarBlip) == 0
+    assert _count(context, RadarBlip, radar_id) == 0
 
 
 def test_update_blip_not_in_radar(context: AppContext) -> None:
@@ -139,11 +139,11 @@ def test_update_blip_invalid_placement_leaves_blip_unchanged(context: AppContext
 def test_delete_blip_removes_blip(context: AppContext) -> None:
     radar_id, quadrants, rings = _seed_radar(context)
     blip = BlipService(context).create_blip(radar_id, _blip_post(quadrants[0], rings[0]))
-    assert _count(context, RadarBlip) == 1
+    assert _count(context, RadarBlip, radar_id) == 1
 
     BlipService(context).delete_blip(radar_id, blip.id)
 
-    assert _count(context, RadarBlip) == 0
+    assert _count(context, RadarBlip, radar_id) == 0
 
 
 def test_delete_blip_not_found(context: AppContext) -> None:
@@ -161,7 +161,7 @@ def test_delete_blip_not_in_radar(context: AppContext) -> None:
     with pytest.raises(BlipNotFoundError):
         BlipService(context).delete_blip(other_radar_id, blip.id)
 
-    assert _count(context, RadarBlip) == 1  # blip preserved
+    assert _count(context, RadarBlip, radar_id) == 1  # blip preserved
 
 
 def test_delete_blip_leaves_other_blips(context: AppContext) -> None:
@@ -171,7 +171,7 @@ def test_delete_blip_leaves_other_blips(context: AppContext) -> None:
 
     BlipService(context).delete_blip(radar_id, removed.id)
 
-    remaining = context.db.scalars(select(RadarBlip)).all()
+    remaining = context.db.scalars(select(RadarBlip).where(RadarBlip.radar_id == radar_id)).all()
     assert [blip.id for blip in remaining] == [kept.id]
 
 
@@ -188,4 +188,4 @@ def test_delete_blip_rolls_back_on_db_failure(context: AppContext) -> None:
 
     context.db.rollback()
 
-    assert _count(context, RadarBlip) == 1
+    assert _count(context, RadarBlip, radar_id) == 1

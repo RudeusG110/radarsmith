@@ -13,6 +13,10 @@ def _count(context: AppContext, model: type[Radar] | type[RadarQuadrant] | type[
 
 
 def test_create_radar_rolls_back_when_structure_creation_fails(context: AppContext) -> None:
+    radar_count_before = _count(context, Radar)
+    quadrant_count_before = _count(context, RadarQuadrant)
+    ring_count_before = _count(context, RadarRing)
+
     with patch("app.api.services.radar_service.RingDb") as ring_db_type:
         ring_db_type.return_value.create.side_effect = RuntimeError("ring creation failed")
 
@@ -21,6 +25,6 @@ def test_create_radar_rolls_back_when_structure_creation_fails(context: AppConte
 
     context.db.rollback()
 
-    assert _count(context, Radar) == 0
-    assert _count(context, RadarQuadrant) == 0
-    assert _count(context, RadarRing) == 0
+    assert _count(context, Radar) == radar_count_before
+    assert _count(context, RadarQuadrant) == quadrant_count_before
+    assert _count(context, RadarRing) == ring_count_before
