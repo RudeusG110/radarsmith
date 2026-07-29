@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 
 import pytest
 from app.context.app_context import AppContext
+from app.domain.preload.loader import load_starter_radar
 from app.models.models import Radar, RadarBlip, RadarQuadrant, RadarRing
 from lib.context import cleanup_db, create_db, downgrade_migrations, get_template_settings, run_migrations
 from sqlalchemy import create_engine, func, inspect, select, text
@@ -58,6 +59,109 @@ def test_downgrade_removes_schema(empty_database: str) -> None:
     downgrade_migrations(empty_database)
 
     assert EXPECTED_TABLES.isdisjoint(_table_names(empty_database))
+
+
+def _count(db_url: str, statement: str, radar_id: UUID) -> int:
+    engine = create_engine(db_url)
+    try:
+        with engine.connect() as conn:
+            return conn.execute(text(statement), {"id": radar_id}).scalar_one()
+    finally:
+        engine.dispose()
+
+
+def _radar_name(db_url: str, radar_id: UUID) -> str:
+    engine = create_engine(db_url)
+    try:
+        with engine.connect() as conn:
+            return conn.execute(text("SELECT name FROM radar WHERE id = :id"), {"id": radar_id}).scalar_one()
+    finally:
+        engine.dispose()
+
+
+def _update_radar_name(db_url: str, radar_id: UUID, name: str) -> None:
+    engine = create_engine(db_url)
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("UPDATE radar SET name = :name WHERE id = :id"), {"name": name, "id": radar_id})
+    finally:
+        engine.dispose()
+
+
+def _delete_radar(db_url: str, radar_id: UUID) -> None:
+    engine = create_engine(db_url)
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("DELETE FROM radar WHERE id = :id"), {"id": radar_id})
+    finally:
+        engine.dispose()
+
+
+def _preload_counts(db_url: str, radar_id: UUID) -> tuple[int, int, int, int]:
+    return (
+        _count(db_url, "SELECT count(*) FROM radar WHERE id = :id", radar_id),
+        _count(db_url, "SELECT count(*) FROM radar_quadrant WHERE radar_id = :id", radar_id),
+        _count(db_url, "SELECT count(*) FROM radar_ring WHERE radar_id = :id", radar_id),
+        _count(db_url, "SELECT count(*) FROM radar_blip WHERE radar_id = :id", radar_id),
+    )
+
+
+def test_preload_migration_inserts_complete_starter_radar(empty_database: str) -> None:
+    run_migrations(empty_database)
+
+    artifact = load_starter_radar()
+    radar_id = UUID(artifact["radar"]["id"])
+
+    radar_count, quadrant_count, ring_count, blip_count = _preload_counts(empty_database, radar_id)
+    name = _radar_name(empty_database, radar_id)
+
+    assert radar_count == 1
+    assert name == artifact["radar"]["name"]
+    assert quadrant_count == len(artifact["quadrants"])
+    assert ring_count == len(artifact["rings"])
+    assert blip_count == len(artifact["blips"])
+
+
+def test_preload_migration_does_not_duplicate_on_rerun(empty_database: str) -> None:
+    run_migrations(empty_database)
+    run_migrations(empty_database)
+
+    artifact = load_starter_radar()
+    radar_id = UUID(artifact["radar"]["id"])
+
+    radar_count, _, _, blip_count = _preload_counts(empty_database, radar_id)
+
+    assert radar_count == 1
+    assert blip_count == len(artifact["blips"])
+
+
+def test_preload_edit_survives_migration_rerun(empty_database: str) -> None:
+    run_migrations(empty_database)
+
+    artifact = load_starter_radar()
+    radar_id = UUID(artifact["radar"]["id"])
+    _update_radar_name(empty_database, radar_id, "Edited Radar")
+
+    run_migrations(empty_database)
+
+    assert _radar_name(empty_database, radar_id) == "Edited Radar"
+
+
+def test_preload_deletion_does_not_reappear_on_migration_rerun(empty_database: str) -> None:
+    run_migrations(empty_database)
+
+    artifact = load_starter_radar()
+    radar_id = UUID(artifact["radar"]["id"])
+    _delete_radar(empty_database, radar_id)
+
+    run_migrations(empty_database)
+
+    radar_count, quadrant_count, ring_count, blip_count = _preload_counts(empty_database, radar_id)
+
+    assert radar_count == 0
+    assert quadrant_count == 0
+    assert ring_count == 0
+    assert blip_count == 0
 
 
 def test_quadrant_position_unique_per_radar(context: AppContext) -> None:

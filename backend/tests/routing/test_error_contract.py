@@ -43,7 +43,7 @@ def test_conflict_uses_shared_envelope() -> None:
     register_exception_handlers(app)
 
     @app.get("/boom")
-    def _boom() -> None:
+    def _boom() -> None:  # pyright: ignore[reportUnusedFunction] -- registered as a route handler
         raise ConflictError("Radar name already exists.")
 
     response = TestClient(app).get("/boom")
