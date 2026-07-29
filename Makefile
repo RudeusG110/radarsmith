@@ -1,5 +1,5 @@
 .PHONY: setup dev test lint format typecheck build db-up db-down db-reset export-openapi \
-	fe-setup fe-dev fe-test fe-lint fe-typecheck fe-build
+	fe-setup fe-dev fe-test fe-lint fe-typecheck fe-build fe-generate-types generate-api-types
 
 
 COMPOSE_FILE := dev/docker-compose.yml
@@ -66,6 +66,14 @@ fe-typecheck:
 
 fe-build:
 	cd frontend && npm run build
+
+# Regenerate the committed TypeScript types from backend/openapi.json
+fe-generate-types:
+	cd frontend && npm run generate-types
+
+# Re-export the OpenAPI document and regenerate frontend types from it in one step.
+# CI runs this and diffs the result against the committed file to catch stale types.
+generate-api-types: export-openapi fe-generate-types
 
 # --- Combined ---
 build: fe-build
