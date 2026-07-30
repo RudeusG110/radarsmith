@@ -69,6 +69,9 @@ describe("RadarLibrary", () => {
             .mockResolvedValueOnce(Response.json([], { status: 200 }))
             .mockResolvedValueOnce(
                 Response.json(makeRadarDetail({ id: "new-id", name: "Mobile Radar" }), { status: 201 }),
+            )
+            .mockResolvedValueOnce(
+                Response.json(makeRadarDetail({ id: "new-id", name: "Mobile Radar" }), { status: 200 }),
             );
         vi.stubGlobal("fetch", fetchMock);
         renderLibrary();
@@ -78,6 +81,6 @@ describe("RadarLibrary", () => {
         fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Mobile Radar" } });
         fireEvent.click(screen.getByRole("button", { name: "Create radar" }));
 
-        expect(await screen.findByText("Editing radar new-id.")).toBeInTheDocument();
+        expect(await screen.findByRole("heading", { name: "Mobile Radar" })).toBeInTheDocument();
     });
 });
