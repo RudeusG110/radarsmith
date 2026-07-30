@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 
+import { toErrorMessage } from "../api/errors";
 import { createRadar, type RadarDetail } from "../api/radars";
 
 interface NewRadarFormProps {
@@ -37,7 +38,7 @@ export function NewRadarForm({ onCreated, onCancel }: NewRadarFormProps) {
             onCreated(radar);
         } catch (error) {
             setSubmitting(false);
-            setSubmitError(error instanceof Error ? error.message : "Failed to create radar.");
+            setSubmitError(toErrorMessage(error, "Failed to create radar."));
             // Deferred so the alert exists in the DOM before we try to focus it.
             queueMicrotask(() => submitErrorRef.current?.focus());
         }

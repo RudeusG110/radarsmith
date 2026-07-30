@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { makeRadarDetail } from "../test/factories";
 import { NewRadarForm } from "./NewRadarForm";
 
 describe("NewRadarForm", () => {
@@ -36,7 +37,7 @@ describe("NewRadarForm", () => {
         const submitButton = await screen.findByRole("button", { name: "Creating…" });
         expect(submitButton).toBeDisabled();
 
-        const radar = { id: "r1", name: "Mobile Radar", purpose: null, created_at: "now", updated_at: "now", quadrants: [], rings: [], blips: [] };
+        const radar = makeRadarDetail();
         resolveFetch(Response.json(radar, { status: 201 }));
         await waitFor(() => expect(onCreated).toHaveBeenCalledWith(radar));
     });
@@ -63,7 +64,7 @@ describe("NewRadarForm", () => {
     });
 
     it("calls onCreated with the parsed radar on success", async () => {
-        const radar = { id: "r1", name: "Mobile Radar", purpose: null, created_at: "now", updated_at: "now", quadrants: [], rings: [], blips: [] };
+        const radar = makeRadarDetail();
         vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(radar, { status: 201 })));
         const onCreated = vi.fn();
         render(<NewRadarForm onCreated={onCreated} onCancel={vi.fn()} />);

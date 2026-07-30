@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { makeRadarDetail, makeRadarSummary } from "../test/factories";
 import { RadarLibrary } from "./RadarLibrary";
 import { RadarWorkspace } from "./RadarWorkspace";
 
@@ -22,9 +23,7 @@ describe("RadarLibrary", () => {
     });
 
     it("shows a loading state, then the radar list", async () => {
-        const radars = [
-            { id: "r1", name: "Engineering Radar", purpose: "Our stances", created_at: "now", updated_at: "now" },
-        ];
+        const radars = [makeRadarSummary({ name: "Engineering Radar", purpose: "Our stances" })];
         vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(radars, { status: 200 })));
         renderLibrary();
 
@@ -51,10 +50,7 @@ describe("RadarLibrary", () => {
                 Response.json({ error: { code: "not_found", message: "Failed to reach the server." } }, { status: 500 }),
             )
             .mockResolvedValueOnce(
-                Response.json(
-                    [{ id: "r1", name: "Engineering Radar", purpose: null, created_at: "now", updated_at: "now" }],
-                    { status: 200 },
-                ),
+                Response.json([makeRadarSummary({ name: "Engineering Radar" })], { status: 200 }),
             );
         vi.stubGlobal("fetch", fetchMock);
         renderLibrary();
@@ -72,19 +68,7 @@ describe("RadarLibrary", () => {
             .fn()
             .mockResolvedValueOnce(Response.json([], { status: 200 }))
             .mockResolvedValueOnce(
-                Response.json(
-                    {
-                        id: "new-id",
-                        name: "Mobile Radar",
-                        purpose: null,
-                        created_at: "now",
-                        updated_at: "now",
-                        quadrants: [],
-                        rings: [],
-                        blips: [],
-                    },
-                    { status: 201 },
-                ),
+                Response.json(makeRadarDetail({ id: "new-id", name: "Mobile Radar" }), { status: 201 }),
             );
         vi.stubGlobal("fetch", fetchMock);
         renderLibrary();

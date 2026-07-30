@@ -18,3 +18,8 @@ export class NetworkError extends Error {
         this.cause = cause;
     }
 }
+
+/** Renders any thrown value as user-facing text, falling back for non-`Error` throws. */
+export function toErrorMessage(error: unknown, fallback: string): string {
+    return error instanceof Error ? error.message : fallback;
+}

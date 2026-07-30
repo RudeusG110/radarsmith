@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import { toErrorMessage } from "../api/errors";
 import { listRadars, type RadarSummary } from "../api/radars";
 import { NewRadarForm } from "../components/NewRadarForm";
 
@@ -15,7 +16,7 @@ export function RadarLibrary() {
         listRadars()
             .then(setRadars)
             .catch((error: unknown) => {
-                setLoadError(error instanceof Error ? error.message : "Failed to load radars.");
+                setLoadError(toErrorMessage(error, "Failed to load radars."));
             });
     }, []);
 
