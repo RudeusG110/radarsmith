@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { makeBlip, makeQuadrant, makeRing } from "../test/factories";
@@ -10,6 +11,28 @@ const blip = makeBlip({ id: "b1", name: "Service Mesh", description: "A mesh.", 
 
 function renderDrawer(onSaved = vi.fn(), onCancel = vi.fn()) {
     render(<EditBlipDrawer radarId="r1" blip={blip} quadrants={quadrants} rings={rings} onSaved={onSaved} onCancel={onCancel} />);
+}
+
+/** Mirrors how RadarWorkspace opens the drawer from a trigger button, for focus-restore tests. */
+function Harness() {
+    const [open, setOpen] = useState(false);
+    return (
+        <div>
+            <button type="button" onClick={() => setOpen(true)}>
+                Open
+            </button>
+            {open && (
+                <EditBlipDrawer
+                    radarId="r1"
+                    blip={blip}
+                    quadrants={quadrants}
+                    rings={rings}
+                    onSaved={() => setOpen(false)}
+                    onCancel={() => setOpen(false)}
+                />
+            )}
+        </div>
+    );
 }
 
 async function requestBody(fetchMock: ReturnType<typeof vi.fn>): Promise<unknown> {
@@ -101,5 +124,40 @@ describe("EditBlipDrawer", () => {
 
         expect(onCancel).toHaveBeenCalledOnce();
         expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("blocks a blank name change with an accessibly-linked error and no request", () => {
+        const fetchMock = vi.fn();
+        vi.stubGlobal("fetch", fetchMock);
+        renderDrawer();
+
+        fireEvent.change(screen.getByLabelText("Name"), { target: { value: "   " } });
+        fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+        const alert = screen.getByRole("alert");
+        expect(alert).toHaveTextContent("Name is required.");
+        expect(screen.getByLabelText("Name")).toHaveAttribute("aria-describedby", alert.id);
+        expect(screen.getByLabelText("Name")).toHaveFocus();
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("closes on Escape", () => {
+        const onCancel = vi.fn();
+        renderDrawer(vi.fn(), onCancel);
+
+        fireEvent.keyDown(screen.getByLabelText("Name"), { key: "Escape" });
+
+        expect(onCancel).toHaveBeenCalledOnce();
+    });
+
+    it("restores focus to the trigger button after Cancel", () => {
+        render(<Harness />);
+        const trigger = screen.getByRole("button", { name: "Open" });
+        trigger.focus();
+        fireEvent.click(trigger);
+
+        fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+        expect(trigger).toHaveFocus();
     });
 });

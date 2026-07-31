@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { makeBlip, makeQuadrant, makeRing } from "../test/factories";
@@ -9,6 +10,21 @@ const rings = [makeRing({ id: "ring1", name: "ADOPT" }), makeRing({ id: "ring2",
 
 function renderDrawer(onCreated = vi.fn(), onCancel = vi.fn()) {
     render(<AddBlipDrawer radarId="r1" quadrants={quadrants} rings={rings} onCreated={onCreated} onCancel={onCancel} />);
+}
+
+/** Mirrors how RadarWorkspace opens the drawer from a trigger button, for focus-restore tests. */
+function Harness() {
+    const [open, setOpen] = useState(false);
+    return (
+        <div>
+            <button type="button" onClick={() => setOpen(true)}>
+                Open
+            </button>
+            {open && (
+                <AddBlipDrawer radarId="r1" quadrants={quadrants} rings={rings} onCreated={() => setOpen(false)} onCancel={() => setOpen(false)} />
+            )}
+        </div>
+    );
 }
 
 describe("AddBlipDrawer", () => {
@@ -30,7 +46,10 @@ describe("AddBlipDrawer", () => {
 
         fireEvent.click(screen.getByRole("button", { name: "Add blip" }));
 
-        expect(screen.getByRole("alert")).toHaveTextContent("Name is required.");
+        const alert = screen.getByRole("alert");
+        expect(alert).toHaveTextContent("Name is required.");
+        expect(screen.getByLabelText("Name")).toHaveAttribute("aria-describedby", alert.id);
+        expect(screen.getByLabelText("Name")).toHaveFocus();
         expect(fetchMock).not.toHaveBeenCalled();
     });
 
@@ -97,5 +116,25 @@ describe("AddBlipDrawer", () => {
 
         expect(onCancel).toHaveBeenCalledOnce();
         expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("closes on Escape", () => {
+        const onCancel = vi.fn();
+        renderDrawer(vi.fn(), onCancel);
+
+        fireEvent.keyDown(screen.getByLabelText("Name"), { key: "Escape" });
+
+        expect(onCancel).toHaveBeenCalledOnce();
+    });
+
+    it("restores focus to the trigger button after Cancel", () => {
+        render(<Harness />);
+        const trigger = screen.getByRole("button", { name: "Open" });
+        trigger.focus();
+        fireEvent.click(trigger);
+
+        fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+        expect(trigger).toHaveFocus();
     });
 });
