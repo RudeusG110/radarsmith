@@ -28,6 +28,7 @@
         "eslint": "^9.17.0",
         "eslint-plugin-react-hooks": "^5.1.0",
         "eslint-plugin-react-refresh": "^0.4.16",
+        "fast-check": "^3.23.1",
         "globals": "^15.14.0",
         "jsdom": "^25.0.1",
         "openapi-typescript": "^7.13.0",
