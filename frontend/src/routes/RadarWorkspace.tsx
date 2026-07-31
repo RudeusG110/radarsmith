@@ -2,22 +2,20 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { ApiError, toErrorMessage } from "../api/errors";
-import { getRadar, type RadarDetail } from "../api/radars";
+import { getRadar, type Blip, type RadarDetail } from "../api/radars";
+import { AddBlipDrawer } from "../components/AddBlipDrawer";
+import { DeleteBlipDialog } from "../components/DeleteBlipDialog";
+import { EditBlipDrawer } from "../components/EditBlipDrawer";
+import { titleCase } from "../format";
 
-/** Renders backend enum values ("ADOPT", "LANGUAGES & FRAMEWORKS") as title case. */
-function titleCase(value: string): string {
-    return value
-        .toLowerCase()
-        .split(" ")
-        .map((word) => (word === "&" ? word : word.charAt(0).toUpperCase() + word.slice(1)))
-        .join(" ");
-}
+type OpenDialog = { kind: "add" } | { kind: "edit"; blip: Blip } | { kind: "delete"; blip: Blip } | null;
 
 export function RadarWorkspace() {
     const { radarId } = useParams();
     const [radar, setRadar] = useState<RadarDetail | null>(null);
     const [notFound, setNotFound] = useState(false);
     const [loadError, setLoadError] = useState<string | null>(null);
+    const [openDialog, setOpenDialog] = useState<OpenDialog>(null);
 
     const load = useCallback(() => {
         if (radarId === undefined) {
@@ -72,6 +70,23 @@ export function RadarWorkspace() {
     const quadrantById = new Map(radar.quadrants.map((quadrant) => [quadrant.id, quadrant]));
     const ringById = new Map(radar.rings.map((ring) => [ring.id, ring]));
 
+    function handleCreated(blip: Blip) {
+        setRadar((current) => (current === null ? current : { ...current, blips: [...current.blips, blip] }));
+        setOpenDialog(null);
+    }
+
+    function handleSaved(blip: Blip) {
+        setRadar((current) =>
+            current === null ? current : { ...current, blips: current.blips.map((existing) => (existing.id === blip.id ? blip : existing)) },
+        );
+        setOpenDialog(null);
+    }
+
+    function handleDeleted(blipId: string) {
+        setRadar((current) => (current === null ? current : { ...current, blips: current.blips.filter((blip) => blip.id !== blipId) }));
+        setOpenDialog(null);
+    }
+
     return (
         <main>
             <h1>{radar.name}</h1>
@@ -82,6 +97,9 @@ export function RadarWorkspace() {
                 <dt>Rings</dt>
                 <dd>{radar.rings.map((ring) => titleCase(ring.name)).join(", ")}</dd>
             </dl>
+            <button type="button" onClick={() => setOpenDialog({ kind: "add" })}>
+                + Add Blip
+            </button>
             {radar.blips.length === 0 ? (
                 <p>No blips yet.</p>
             ) : (
@@ -94,6 +112,7 @@ export function RadarWorkspace() {
                                 <th scope="col">Quadrant</th>
                                 <th scope="col">Ring</th>
                                 <th scope="col">Description</th>
+                                <th scope="col">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -108,11 +127,35 @@ export function RadarWorkspace() {
                                             <p>{blip.description}</p>
                                         </details>
                                     </td>
+                                    <td>
+                                        <button type="button" onClick={() => setOpenDialog({ kind: "edit", blip })}>
+                                            Edit<span className="visually-hidden"> {blip.name}</span>
+                                        </button>
+                                        <button type="button" onClick={() => setOpenDialog({ kind: "delete", blip })}>
+                                            Delete<span className="visually-hidden"> {blip.name}</span>
+                                        </button>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
+            )}
+            {openDialog?.kind === "add" && (
+                <AddBlipDrawer radarId={radar.id} quadrants={radar.quadrants} rings={radar.rings} onCreated={handleCreated} onCancel={() => setOpenDialog(null)} />
+            )}
+            {openDialog?.kind === "edit" && (
+                <EditBlipDrawer
+                    radarId={radar.id}
+                    blip={openDialog.blip}
+                    quadrants={radar.quadrants}
+                    rings={radar.rings}
+                    onSaved={handleSaved}
+                    onCancel={() => setOpenDialog(null)}
+                />
+            )}
+            {openDialog?.kind === "delete" && (
+                <DeleteBlipDialog radarId={radar.id} blip={openDialog.blip} onDeleted={handleDeleted} onCancel={() => setOpenDialog(null)} />
             )}
         </main>
     );

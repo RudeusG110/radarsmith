@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -93,6 +93,69 @@ describe("RadarWorkspace", () => {
         fireEvent.click(screen.getByRole("button", { name: "Try again" }));
 
         expect(await screen.findByRole("heading", { name: "Engineering Radar" })).toBeInTheDocument();
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it("adds a new blip to the table from the server-confirmed response, without refetching the radar", async () => {
+        const quadrant = makeQuadrant({ id: "q1", name: "TECHNIQUES" });
+        const ring = makeRing({ id: "ring1", name: "ADOPT" });
+        const radar = makeRadarDetail({ quadrants: [quadrant], rings: [ring], blips: [] });
+        const newBlip = makeBlip({ id: "b2", name: "Feature Flags", description: "Toggle behavior at runtime." });
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce(Response.json(radar, { status: 200 }))
+            .mockResolvedValueOnce(Response.json(newBlip, { status: 201 }));
+        vi.stubGlobal("fetch", fetchMock);
+        renderWorkspace();
+
+        await screen.findByRole("heading", { name: radar.name });
+        fireEvent.click(screen.getByRole("button", { name: "+ Add Blip" }));
+        fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Feature Flags" } });
+        fireEvent.change(screen.getByLabelText("Description"), { target: { value: "Toggle behavior at runtime." } });
+        fireEvent.click(screen.getByRole("button", { name: "Add blip" }));
+
+        expect(await screen.findByRole("cell", { name: "Feature Flags" })).toBeInTheDocument();
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it("updates a blip in the table from the server-confirmed response", async () => {
+        const quadrant = makeQuadrant({ id: "q1", name: "TECHNIQUES" });
+        const ring = makeRing({ id: "ring1", name: "ADOPT" });
+        const blip = makeBlip({ id: "b1", name: "Service Mesh", quadrant_id: "q1", ring_id: "ring1" });
+        const radar = makeRadarDetail({ quadrants: [quadrant], rings: [ring], blips: [blip] });
+        const updatedBlip = makeBlip({ ...blip, name: "Service Mesh v2" });
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce(Response.json(radar, { status: 200 }))
+            .mockResolvedValueOnce(Response.json(updatedBlip, { status: 200 }));
+        vi.stubGlobal("fetch", fetchMock);
+        renderWorkspace();
+
+        await screen.findByRole("cell", { name: "Service Mesh" });
+        fireEvent.click(screen.getByRole("button", { name: "Edit Service Mesh" }));
+        fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Service Mesh v2" } });
+        fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+        expect(await screen.findByRole("cell", { name: "Service Mesh v2" })).toBeInTheDocument();
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it("removes a blip from the table after a confirmed delete", async () => {
+        const blip = makeBlip({ id: "b1", name: "Service Mesh" });
+        const radar = makeRadarDetail({ blips: [blip] });
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce(Response.json(radar, { status: 200 }))
+            .mockResolvedValueOnce(new Response(null, { status: 204 }));
+        vi.stubGlobal("fetch", fetchMock);
+        renderWorkspace();
+
+        await screen.findByRole("cell", { name: "Service Mesh" });
+        fireEvent.click(screen.getByRole("button", { name: "Delete Service Mesh" }));
+        expect(screen.getByRole("dialog")).toHaveTextContent("Delete Service Mesh?");
+        fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+
+        await waitFor(() => expect(screen.queryByRole("cell", { name: "Service Mesh" })).not.toBeInTheDocument());
         expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 });
