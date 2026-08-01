@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+import { ringColor } from "../ringColor";
 import { makeBlip, makeQuadrant, makeRing } from "../test/factories";
 import { RadarSvg } from "./RadarSvg";
 
@@ -74,7 +75,7 @@ describe("RadarSvg", () => {
         expect(onSelect).toHaveBeenCalledTimes(3);
     });
 
-    it("fills the marker matching selectedId and leaves others unfilled", () => {
+    it("outlines the marker matching selectedId and leaves others with the unselected outline", () => {
         const blips = [
             makeBlip({ id: "b1", name: "Service Mesh", quadrant_id: "q1", ring_id: "ring1" }),
             makeBlip({ id: "b2", name: "Feature Flags", quadrant_id: "q2", ring_id: "ring2" }),
@@ -83,8 +84,54 @@ describe("RadarSvg", () => {
 
         const selectedMarker = screen.getByRole("graphics-symbol", { name: "Service Mesh, Techniques, Adopt" });
         const otherMarker = screen.getByRole("graphics-symbol", { name: "Feature Flags, Tools, Trial" });
-        expect(selectedMarker.querySelector("circle")).toHaveAttribute("fill", "currentColor");
-        expect(otherMarker.querySelector("circle")).toHaveAttribute("fill", "none");
+        expect(selectedMarker.querySelector("circle")).toHaveAttribute("stroke", "var(--accent)");
+        expect(otherMarker.querySelector("circle")).toHaveAttribute("stroke", "var(--bg)");
+    });
+
+    it("colors each marker from its own ring's order, not hardcoded to four rings", () => {
+        const threeRings = [
+            makeRing({ id: "ring2", name: "TRIAL", position: 2 }),
+            makeRing({ id: "ring1", name: "ADOPT", position: 1 }),
+            makeRing({ id: "ring3", name: "ASSESS", position: 3 }),
+        ];
+        const blips = [
+            makeBlip({ id: "b1", name: "Service Mesh", quadrant_id: "q1", ring_id: "ring1" }),
+            makeBlip({ id: "b2", name: "Feature Flags", quadrant_id: "q1", ring_id: "ring2" }),
+            makeBlip({ id: "b3", name: "Chatbots", quadrant_id: "q1", ring_id: "ring3" }),
+        ];
+        render(<RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={threeRings} blips={blips} selectedId={null} onSelect={vi.fn()} />);
+
+        const marker1 = screen.getByRole("graphics-symbol", { name: "Service Mesh, Techniques, Adopt" });
+        const marker2 = screen.getByRole("graphics-symbol", { name: "Feature Flags, Techniques, Trial" });
+        const marker3 = screen.getByRole("graphics-symbol", { name: "Chatbots, Techniques, Assess" });
+        expect(marker1.querySelector("circle")).toHaveAttribute("fill", ringColor(0, 3));
+        expect(marker2.querySelector("circle")).toHaveAttribute("fill", ringColor(1, 3));
+        expect(marker3.querySelector("circle")).toHaveAttribute("fill", ringColor(2, 3));
+    });
+
+    it("renders one alternating-fill ring band per ring, for arbitrary ring counts", () => {
+        const threeRings = [
+            makeRing({ id: "ring2", name: "TRIAL", position: 2 }),
+            makeRing({ id: "ring1", name: "ADOPT", position: 1 }),
+            makeRing({ id: "ring3", name: "ASSESS", position: 3 }),
+        ];
+        const { container } = render(
+            <RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={threeRings} blips={[]} selectedId={null} onSelect={vi.fn()} />,
+        );
+
+        const bands = container.querySelectorAll("svg > circle");
+        expect(bands).toHaveLength(threeRings.length);
+        expect(bands[0]).toHaveAttribute("fill", "var(--panel-2)");
+        expect(bands[1]).toHaveAttribute("fill", "var(--panel)");
+        expect(bands[2]).toHaveAttribute("fill", "var(--panel-2)");
+    });
+
+    it("gives each marker a native <title> tooltip carrying the blip name", () => {
+        const blips = [makeBlip({ id: "b1", name: "Service Mesh", quadrant_id: "q1", ring_id: "ring1" })];
+        render(<RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={blips} selectedId={null} onSelect={vi.fn()} />);
+
+        const marker = screen.getByRole("graphics-symbol");
+        expect(marker.querySelector("title")).toHaveTextContent("Service Mesh");
     });
 
     it("renders exactly one marker per blip in a dense sector/ring", () => {

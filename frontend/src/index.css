@@ -228,3 +228,14 @@ td {
 tr.selected {
     background: var(--accent-soft);
 }
+
+.radar-svg [role="graphics-symbol"] {
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 120ms ease;
+}
+
+.radar-svg [role="graphics-symbol"]:hover,
+.radar-svg [role="graphics-symbol"]:focus-visible {
+    transform: scale(1.3);
+}

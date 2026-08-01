@@ -175,7 +175,7 @@ describe("RadarWorkspace", () => {
         fireEvent.click(screen.getByRole("button", { name: "Service Mesh" }));
 
         expect(screen.getByRole("button", { name: "Service Mesh" })).toHaveAttribute("aria-pressed", "true");
-        expect(screen.getByRole("graphics-symbol").querySelector("circle")).toHaveAttribute("fill", "currentColor");
+        expect(screen.getByRole("graphics-symbol").querySelector("circle")).toHaveAttribute("stroke", "var(--accent)");
         expect(screen.getByRole("heading", { name: "Service Mesh" })).toBeInTheDocument();
         expect(screen.getByRole("graphics-symbol")).toHaveFocus();
 
