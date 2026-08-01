@@ -126,6 +126,23 @@ describe("RadarSvg", () => {
         expect(bands[2]).toHaveAttribute("fill", "var(--panel-2)");
     });
 
+    it("draws every quadrant boundary line before any quadrant label, so a line can never paint over a label", () => {
+        const { container } = render(
+            <RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={[]} selectedId={null} onSelect={vi.fn()} />,
+        );
+
+        const quadrantLabels = ["Techniques", "Tools"];
+        const nodes = [...container.querySelectorAll("line, text")];
+        const lineIndices = nodes.map((node, index) => (node.tagName === "line" ? index : -1)).filter((index) => index !== -1);
+        const labelIndices = nodes
+            .map((node, index) => (node.tagName === "text" && quadrantLabels.includes(node.textContent ?? "") ? index : -1))
+            .filter((index) => index !== -1);
+
+        expect(lineIndices).toHaveLength(quadrants.length);
+        expect(labelIndices).toHaveLength(quadrants.length);
+        expect(Math.max(...lineIndices)).toBeLessThan(Math.min(...labelIndices));
+    });
+
     it("gives each marker a native <title> tooltip carrying the blip name", () => {
         const blips = [makeBlip({ id: "b1", name: "Service Mesh", quadrant_id: "q1", ring_id: "ring1" })];
         render(<RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={blips} selectedId={null} onSelect={vi.fn()} />);

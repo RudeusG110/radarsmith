@@ -77,6 +77,7 @@ export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSel
                     {titleCase(ringById.get(ring.ringId)?.name ?? "")}
                 </text>
             ))}
+            {/* Boundary lines drawn before labels (below, in paint order) so no line can cover a label. */}
             {geometry.sectors.map((sector) => {
                 const quadrantLabel = titleCase(quadrantById.get(sector.quadrantId)?.name ?? "");
                 return (
@@ -98,12 +99,19 @@ export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSel
                             y2={sector.boundaryEnd.y}
                             stroke="currentColor"
                         />
-                        <text x={sector.labelPosition.x} y={sector.labelPosition.y} textAnchor="middle">
-                            {quadrantLabel}
-                        </text>
                     </g>
                 );
             })}
+            {geometry.sectors.map((sector) => (
+                <text
+                    key={sector.quadrantId}
+                    x={sector.labelPosition.x}
+                    y={sector.labelPosition.y}
+                    textAnchor="middle"
+                >
+                    {titleCase(quadrantById.get(sector.quadrantId)?.name ?? "")}
+                </text>
+            ))}
             {blips.length === 0 && (
                 <text x={geometry.center.x} y={geometry.center.y} textAnchor="middle">
                     No blips yet
