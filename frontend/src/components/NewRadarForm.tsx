@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 
 import { toErrorMessage } from "../api/errors";
 import { createRadar, type RadarDetail } from "../api/radars";
+import { useToast } from "../toast";
 
 interface NewRadarFormProps {
     onCreated: (radar: RadarDetail) => void;
@@ -16,6 +17,7 @@ export function NewRadarForm({ onCreated, onCancel }: NewRadarFormProps) {
     const [submitting, setSubmitting] = useState(false);
     const nameInputRef = useRef<HTMLInputElement>(null);
     const submitErrorRef = useRef<HTMLParagraphElement>(null);
+    const { showToast } = useToast();
 
     async function handleSubmit(event: React.FormEvent) {
         event.preventDefault();
@@ -35,6 +37,7 @@ export function NewRadarForm({ onCreated, onCancel }: NewRadarFormProps) {
                 name: trimmedName,
                 purpose: purpose.trim() || undefined,
             });
+            showToast(`Radar "${radar.name}" created.`, "success");
             onCreated(radar);
         } catch (error) {
             setSubmitting(false);

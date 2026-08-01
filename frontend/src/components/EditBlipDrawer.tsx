@@ -4,6 +4,7 @@ import { toErrorMessage } from "../api/errors";
 import { updateBlip, type Blip, type BlipPatch, type Quadrant, type Ring } from "../api/radars";
 import { titleCase } from "../format";
 import { Dialog } from "./Dialog";
+import { useToast } from "../toast";
 
 interface EditBlipDrawerProps {
     radarId: string;
@@ -26,6 +27,7 @@ export function EditBlipDrawer({ radarId, blip, quadrants, rings, onSaved, onCan
     const nameInputRef = useRef<HTMLInputElement>(null);
     const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
     const submitErrorRef = useRef<HTMLParagraphElement>(null);
+    const { showToast } = useToast();
 
     const nameChanged = name !== blip.name;
     const descriptionChanged = description !== blip.description;
@@ -62,6 +64,7 @@ export function EditBlipDrawer({ radarId, blip, quadrants, rings, onSaved, onCan
 
         try {
             const updated = await updateBlip(radarId, blip.id, patch);
+            showToast(`Blip "${updated.name}" updated.`, "success");
             onSaved(updated);
         } catch (error) {
             setSubmitting(false);
