@@ -323,4 +323,23 @@ describe("RadarWorkspace", () => {
 
         expect(screen.getByRole("heading", { name: "Service Mesh" })).toBeInTheDocument();
     });
+
+    it("View mode: stacks the side panel below the radar on narrow screens, with no tab toggle", async () => {
+        stubMatchMedia(true);
+        const quadrant = makeQuadrant({ id: "q1", name: "TECHNIQUES" });
+        const ring = makeRing({ id: "ring1", name: "ADOPT" });
+        const blip = makeBlip({ id: "b1", name: "Service Mesh", quadrant_id: "q1", ring_id: "ring1" });
+        const radar = makeRadarDetail({ quadrants: [quadrant], rings: [ring], blips: [blip] });
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(radar, { status: 200 })));
+        renderWorkspace();
+
+        await screen.findByRole("graphics-symbol");
+        expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+        expect(screen.getByText("Select a blip or a quadrant to see details.")).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole("graphics-symbol"));
+
+        expect(screen.getByRole("heading", { name: "Service Mesh" })).toBeInTheDocument();
+        expect(screen.getByRole("graphics-symbol")).toBeInTheDocument();
+    });
 });

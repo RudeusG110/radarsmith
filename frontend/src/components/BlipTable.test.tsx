@@ -47,6 +47,26 @@ describe("BlipTable", () => {
         expect(screen.getByRole("cell", { name: "Adopt" })).toBeInTheDocument();
     });
 
+    it("does not render a per-row description disclosure (consolidated into the side panel instead)", () => {
+        const blip = makeBlip({ id: "b1", name: "Service Mesh", description: "A mesh." });
+        const { container } = render(
+            <BlipTable
+                radarName="Engineering Radar"
+                blips={[blip]}
+                quadrantById={quadrantById}
+                ringById={ringById}
+                selectedId={null}
+                onSelect={vi.fn()}
+                onEdit={vi.fn()}
+                onDelete={vi.fn()}
+            />,
+        );
+
+        expect(container.querySelector("details")).toBeNull();
+        expect(screen.queryByText("A mesh.")).not.toBeInTheDocument();
+        expect(screen.queryByRole("columnheader", { name: "Description" })).not.toBeInTheDocument();
+    });
+
     it("calls onSelect with the blip's id when its name button is activated, regardless of current selection", () => {
         const blip = makeBlip({ id: "b1", name: "Service Mesh" });
         const onSelect = vi.fn();

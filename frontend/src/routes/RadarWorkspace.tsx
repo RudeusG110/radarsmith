@@ -110,7 +110,7 @@ export function RadarWorkspace() {
         viewSelection === null
             ? null
             : viewSelection.kind === "blip"
-              ? (() => {
+                ? (() => {
                     const blip = radar.blips.find((candidate) => candidate.id === viewSelection.blipId);
                     if (blip === undefined) {
                         return null;
@@ -122,7 +122,7 @@ export function RadarWorkspace() {
                         ringLabel: titleCase(ringById.get(blip.ring_id)?.name ?? "Unknown"),
                     };
                 })()
-              : {
+                : {
                     kind: "quadrant",
                     quadrantLabel: titleCase(quadrantById.get(viewSelection.quadrantId)?.name ?? "Unknown"),
                     groups: orderedRings
