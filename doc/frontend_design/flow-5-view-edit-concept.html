@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RadarSmith — Flow 5 concept (View mode + Edit mode)</title>
+    <style>
+        /* Design tokens ported from flow-4-prototype-final.html (agreed as the real design system) */
+        :root {
+            --bg: #0f1419;
+            --panel: #1a212b;
+            --panel-2: #222b37;
+            --border: #2d3846;
+            --text: #e6edf3;
+            --muted: #9aa7b4;
+            --accent: #4c8dff;
+            --accent-soft: #23344f;
+            --danger: #ef4b5b;
+            --ok: #3fb950;
+            --warn: #d29922;
+            --ring-adopt: #3fb950;
+            --ring-trial: #58a6ff;
+            --ring-assess: #d29922;
+            --ring-caution: #f85149;
+            --radius: 10px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        a {
+            color: var(--accent);
+        }
+
+        header.topbar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--panel);
+        }
+
+        .brand {
+            font-weight: 700;
+        }
+
+        .brand .logo {
+            color: var(--accent);
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .btn {
+            border: 1px solid var(--border);
+            background: var(--panel-2);
+            color: var(--text);
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .btn.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        /* Mode toggle (Q10): local UI state, same route, not a separate page */
+        .mode-toggle {
+            display: flex;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .mode-toggle button {
+            border: 0;
+            background: var(--panel-2);
+            color: var(--muted);
+            padding: 7px 16px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+        }
+
+        .mode-toggle button.active {
+            background: var(--accent-soft);
+            color: var(--text);
+        }
+
+        main.content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 20px;
+        }
+
+        .ws-head {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .ws-head h1 {
+            font-size: 20px;
+            margin: 0;
+        }
+
+        .subtle {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+
+        .panel-title {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--muted);
+        }
+
+        /* ---------- Library (front page): still a list of radars, not just the workspace ---------- */
+        .lib-head {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+
+        .lib-head h1 {
+            font-size: 22px;
+            margin: 0 0 4px;
+        }
+
+        .radar-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .radar-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 18px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            cursor: pointer;
+        }
+
+        .radar-card:hover {
+            border-color: var(--accent);
+        }
+
+        .radar-card .info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .radar-card .name {
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .radar-card .purpose {
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 3px;
+        }
+
+        .radar-card .meta {
+            color: var(--muted);
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .tag {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: var(--accent-soft);
+            border: 1px solid #34507d;
+            padding: 2px 8px;
+            border-radius: 999px;
+            margin-left: 8px;
+        }
+
+        /* ---------- View mode: radar full-width, side panel alongside (Q8, Q11) ---------- */
+        .view-grid {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 18px;
+            align-items: start;
+        }
+
+        @media (max-width: 860px) {
+            .view-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .radar-wrap {
+            padding: 20px;
+        }
+
+        svg.radar {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .marker circle {
+            transition: transform .12s ease;
+            transform-box: fill-box;
+            transform-origin: center;
+            cursor: pointer;
+        }
+
+        .marker:hover circle,
+        .marker:focus circle {
+            transform: scale(1.3);
+        }
+
+        .marker text {
+            font-size: 10px;
+            font-weight: 700;
+            fill: #fff;
+            pointer-events: none;
+        }
+
+        .quad-hit {
+            cursor: pointer;
+        }
+
+        .quad-label {
+            fill: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .ring-label {
+            fill: var(--muted);
+            font-size: 9px;
+            text-transform: uppercase;
+        }
+
+        .side-panel .panel-body {
+            padding: 16px;
+            font-size: 14px;
+        }
+
+        .side-panel .empty {
+            color: var(--muted);
+            text-align: center;
+            padding: 24px 0;
+        }
+
+        .side-panel h2 {
+            margin: 0 0 4px;
+            font-size: 16px;
+        }
+
+        .side-panel .place {
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        .side-panel table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .side-panel th {
+            text-align: left;
+            color: var(--muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            padding: 6px 4px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .side-panel td {
+            padding: 6px 4px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .back-link {
+            background: none;
+            border: 0;
+            color: var(--accent);
+            font-size: 12px;
+            padding: 0 0 8px;
+        }
+
+        /* ---------- Edit mode: existing split-screen, restyled to the same tokens (Q1, Q25) ---------- */
+        .edit-grid {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 18px;
+            align-items: start;
+        }
+
+        @media (max-width: 860px) {
+            .edit-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        table.blips {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        table.blips th {
+            text-align: left;
+            padding: 8px 12px;
+            color: var(--muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border);
+        }
+
+        table.blips td {
+            padding: 6px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        table.blips tr:hover {
+            background: var(--panel-2);
+        }
+
+        /* ---------- Toast (Q5) ---------- */
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--panel-2);
+            border: 1px solid var(--ok);
+            color: var(--text);
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .15s, transform .15s;
+        }
+
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+
+<body>
+    <header class="topbar">
+        <button class="brand" style="background:none;border:0;color:var(--text)" onclick="goLibrary()"><span
+                class="logo">◤</span> RadarSmith</button>
+        <span class="subtle" id="crumb" style="display:none">/ Engineering Radar</span>
+        <div class="spacer"></div>
+        <div class="mode-toggle" id="modeToggle" role="group" aria-label="Workspace mode" style="display:none">
+            <button id="viewBtn" class="active" onclick="setMode('view')">View</button>
+            <button id="editBtn" onclick="setMode('edit')">Edit</button>
+        </div>
+    </header>
+
+    <main class="content">
+        <!-- LIBRARY (front page): the list of radars still exists, unchanged from today's app -->
+        <div id="libraryView">
+            <div class="lib-head">
+                <div>
+                    <h1>Radars</h1>
+                    <span class="subtle">2 radars · self-hosted, single author</span>
+                </div>
+                <button class="btn primary">+ New Radar</button>
+            </div>
+            <div class="radar-list">
+                <div class="radar-card" onclick="goWorkspace()">
+                    <div class="info">
+                        <div class="name">Engineering Radar<span class="tag">Start here</span></div>
+                        <div class="purpose">Our current tech stances</div>
+                    </div>
+                    <div class="meta">8 blips</div>
+                </div>
+                <div class="radar-card" onclick="goWorkspace()">
+                    <div class="info">
+                        <div class="name">Data Platform Radar</div>
+                        <div class="purpose">Warehouse &amp; pipeline choices</div>
+                    </div>
+                    <div class="meta">2 blips</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WORKSPACE: reached by opening a radar from the library above -->
+        <div id="workspaceView" style="display:none">
+            <div class="ws-head">
+                <h1>Engineering Radar</h1>
+                <span class="subtle">Our current tech stances</span>
+            </div>
+
+            <!-- VIEW MODE -->
+            <div id="viewMode">
+                <div class="view-grid">
+                    <div class="panel radar-panel">
+                        <div class="panel-title">Radar — view only</div>
+                        <div class="radar-wrap">
+                            <svg class="radar" viewBox="0 0 480 480" role="graphics-document"
+                                aria-label="Engineering Radar">
+                                <circle cx="240" cy="240" r="200" fill="#151c25" stroke="var(--border)" />
+                                <circle cx="240" cy="240" r="150" fill="#111820" stroke="var(--border)" />
+                                <circle cx="240" cy="240" r="100" fill="#151c25" stroke="var(--border)" />
+                                <circle cx="240" cy="240" r="50" fill="#111820" stroke="var(--border)" />
+                                <line x1="40" y1="240" x2="440" y2="240" stroke="var(--border)" />
+                                <line x1="240" y1="40" x2="240" y2="440" stroke="var(--border)" />
+
+                                <text class="ring-label" x="240" y="215" text-anchor="middle">Adopt</text>
+                                <text class="ring-label" x="240" y="165" text-anchor="middle">Trial</text>
+                                <text class="ring-label" x="240" y="115" text-anchor="middle">Assess</text>
+                                <text class="ring-label" x="240" y="65" text-anchor="middle">Caution</text>
+
+                                <!-- quadrant hit-areas: click drills into a ring-grouped table (Q8) -->
+                                <rect class="quad-hit" x="240" y="40" width="200" height="200" fill="transparent"
+                                    onclick="showQuadrant('Languages &amp; Frameworks')" />
+                                <rect class="quad-hit" x="40" y="40" width="200" height="200" fill="transparent"
+                                    onclick="showQuadrant('Techniques')" />
+                                <rect class="quad-hit" x="40" y="240" width="200" height="200" fill="transparent"
+                                    onclick="showQuadrant('Platforms')" />
+                                <rect class="quad-hit" x="240" y="240" width="200" height="200" fill="transparent"
+                                    onclick="showQuadrant('Tools')" />
+
+                                <text class="quad-label" x="340" y="60" text-anchor="middle">Languages &amp;
+                                    Frameworks</text>
+                                <text class="quad-label" x="140" y="60" text-anchor="middle">Techniques</text>
+                                <text class="quad-label" x="140" y="425" text-anchor="middle">Platforms</text>
+                                <text class="quad-label" x="340" y="425" text-anchor="middle">Tools</text>
+
+                                <!-- markers: ring-colored fill, native <title> for hover-to-see-name (Q4) -->
+                                <g class="marker" tabindex="0" role="graphics-symbol img"
+                                    aria-label="React, Languages &amp; Frameworks, Adopt"
+                                    onclick="showBlip('React', 'Languages &amp; Frameworks', 'Adopt', 'Default UI library for web apps.')">
+                                    <title>React — Languages &amp; Frameworks, Adopt</title>
+                                    <circle cx="330" cy="215" r="10" fill="var(--ring-adopt)" stroke="#0f1419"
+                                        stroke-width="1.5" />
+                                    <text x="330" y="219" text-anchor="middle">1</text>
+                                </g>
+                                <g class="marker" tabindex="0" role="graphics-symbol img"
+                                    aria-label="Kafka, Techniques, Trial"
+                                    onclick="showBlip('Kafka', 'Techniques', 'Trial', 'Event streaming backbone.')">
+                                    <title>Kafka — Techniques, Trial</title>
+                                    <circle cx="170" cy="175" r="10" fill="var(--ring-trial)" stroke="#0f1419"
+                                        stroke-width="1.5" />
+                                    <text x="170" y="179" text-anchor="middle">2</text>
+                                </g>
+                                <g class="marker" tabindex="0" role="graphics-symbol img"
+                                    aria-label="Service mesh, Platforms, Caution"
+                                    onclick="showBlip('Service mesh', 'Platforms', 'Caution', 'Complexity outweighs benefit for us now.')">
+                                    <title>Service mesh — Platforms, Caution</title>
+                                    <circle cx="120" cy="330" r="10" fill="var(--ring-caution)" stroke="#0f1419"
+                                        stroke-width="1.5" />
+                                    <text x="120" y="334" text-anchor="middle">3</text>
+                                </g>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="panel side-panel">
+                        <div class="panel-title">Details</div>
+                        <div class="panel-body" id="sidePanelBody">
+                            <p class="empty">Click a blip marker for its detail, or a quadrant for its ring-grouped
+                                list.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EDIT MODE -->
+            <div id="editMode" style="display:none">
+                <div class="edit-grid">
+                    <div class="panel">
+                        <div class="panel-title">Radar</div>
+                        <div class="radar-wrap">
+                            <svg class="radar" viewBox="0 0 300 300" role="graphics-document"
+                                aria-label="Engineering Radar (edit)">
+                                <circle cx="150" cy="150" r="125" fill="#151c25" stroke="var(--border)" />
+                                <circle cx="150" cy="150" r="90" fill="#111820" stroke="var(--border)" />
+                                <circle cx="150" cy="150" r="55" fill="#151c25" stroke="var(--border)" />
+                                <circle cx="150" cy="150" r="20" fill="#111820" stroke="var(--border)" />
+                                <g class="marker" role="graphics-symbol img"
+                                    aria-label="React, Languages &amp; Frameworks, Adopt">
+                                    <title>React — Languages &amp; Frameworks, Adopt</title>
+                                    <circle cx="205" cy="130" r="8" fill="var(--ring-adopt)" stroke="#0f1419" />
+                                    <text x="205" y="133" text-anchor="middle" style="font-size:9px">1</text>
+                                </g>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-title">Blips <button class="btn primary" style="float:right"
+                                onclick="fireToast('Blip added')">+ Add blip</button></div>
+                        <table class="blips">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Quadrant</th>
+                                    <th>Ring</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>React</td>
+                                    <td>Languages &amp; Frameworks</td>
+                                    <td>Adopt</td>
+                                    <td>
+                                        <button class="btn" onclick="fireToast('Blip updated')">Edit</button>
+                                        <button class="btn" onclick="fireToast('Blip deleted')">Delete</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="toast"><span style="color:var(--ok)">✓</span> <span id="toastMsg">Saved</span></div>
+
+    <script>
+        // Library <-> workspace navigation: the library (list of radars) is still the front page
+        function goLibrary() {
+            document.getElementById("libraryView").style.display = "";
+            document.getElementById("workspaceView").style.display = "none";
+            document.getElementById("crumb").style.display = "none";
+            document.getElementById("modeToggle").style.display = "none";
+        }
+
+        function goWorkspace() {
+            document.getElementById("libraryView").style.display = "none";
+            document.getElementById("workspaceView").style.display = "";
+            document.getElementById("crumb").style.display = "";
+            document.getElementById("modeToggle").style.display = "";
+            setMode("view");
+        }
+
+        function setMode(mode) {
+            document.getElementById("viewMode").style.display = mode === "view" ? "" : "none";
+            document.getElementById("editMode").style.display = mode === "edit" ? "" : "none";
+            document.getElementById("viewBtn").classList.toggle("active", mode === "view");
+            document.getElementById("editBtn").classList.toggle("active", mode === "edit");
+        }
+
+        // Blip click and quadrant click share the same side-panel slot (Q11b)
+        function showBlip(name, quadrant, ring, desc) {
+            document.getElementById("sidePanelBody").innerHTML =
+                `<h2>${name}</h2><p class="place">${quadrant} · ${ring}</p><p>${desc}</p>`;
+        }
+
+        function showQuadrant(quadrant) {
+            const byRing = {
+                "Languages &amp; Frameworks": [["React", "Adopt"], ["Deno", "Assess"]],
+                "Techniques": [["Trunk-based dev", "Adopt"], ["Kafka", "Trial"]],
+                "Platforms": [["Terraform", "Trial"], ["Service mesh", "Caution"]],
+                "Tools": [["GraphQL", "Assess"]],
+            }[quadrant] || [];
+            const rows = byRing.map(([name, ring]) => `<tr><td>${name}</td><td>${ring}</td></tr>`).join("");
+            document.getElementById("sidePanelBody").innerHTML = `
+                <button class="back-link" onclick="clearPanel()">&larr; Back</button>
+                <h2>${quadrant}</h2>
+                <table><thead><tr><th>Blip</th><th>Ring</th></tr></thead><tbody>${rows}</tbody></table>`;
+        }
+
+        function clearPanel() {
+            document.getElementById("sidePanelBody").innerHTML =
+                '<p class="empty">Click a blip marker for its detail, or a quadrant for its ring-grouped list.</p>';
+        }
+
+        let toastTimer = null;
+        function fireToast(msg) {
+            const t = document.getElementById("toast");
+            document.getElementById("toastMsg").textContent = msg;
+            t.classList.add("show");
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => t.classList.remove("show"), 1300);
+        }
+    </script>
+</body>
+
+</html>

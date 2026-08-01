@@ -43,3 +43,44 @@ td {
     max-height: 90vh;
     overflow-y: auto;
 }
+
+.workspace-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.tab {
+    border: 1px solid #999;
+    background: none;
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+}
+
+.tab.active {
+    font-weight: bold;
+}
+
+.name-toggle {
+    border: 0;
+    background: none;
+    padding: 0;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    display: inline-block;
+    max-width: 16rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: bottom;
+}
+
+.blip-table td:last-child {
+    white-space: nowrap;
+}
+
+tr.selected {
+    background: rgb(0 0 0 / 8%);
+}

@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { makeBlip, makeQuadrant, makeRing } from "../test/factories";
 import { RadarSvg } from "./RadarSvg";
@@ -19,7 +19,7 @@ describe("RadarSvg", () => {
             makeBlip({ id: "b1", name: "Service Mesh", quadrant_id: "q1", ring_id: "ring1" }),
             makeBlip({ id: "b2", name: "Feature Flags", quadrant_id: "q2", ring_id: "ring2" }),
         ];
-        render(<RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={blips} />);
+        render(<RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={blips} selectedId={null} onSelect={vi.fn()} />);
 
         expect(screen.getByRole("graphics-document", { name: "Engineering Radar radar" })).toBeInTheDocument();
         expect(screen.getAllByRole("graphics-object")).toHaveLength(quadrants.length);
@@ -36,14 +36,14 @@ describe("RadarSvg", () => {
             makeBlip({ id: "b1", name: "Service Mesh", quadrant_id: "q1", ring_id: "ring1" }),
             makeBlip({ id: "b2", name: "Orphan", quadrant_id: "unknown-quadrant", ring_id: "ring1" }),
         ];
-        render(<RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={blips} />);
+        render(<RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={blips} selectedId={null} onSelect={vi.fn()} />);
 
         expect(screen.getAllByRole("graphics-symbol")).toHaveLength(1);
     });
 
     it("markers are keyboard focusable", () => {
         const blips = [makeBlip({ id: "b1", name: "Service Mesh", quadrant_id: "q1", ring_id: "ring1" })];
-        render(<RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={blips} />);
+        render(<RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={blips} selectedId={null} onSelect={vi.fn()} />);
 
         const marker = screen.getByRole("graphics-symbol");
         expect(marker).toHaveAttribute("tabindex", "0");
@@ -52,75 +52,48 @@ describe("RadarSvg", () => {
     });
 
     it("shows a meaningful empty state and zero markers when there are no blips", () => {
-        render(<RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={[]} />);
+        render(<RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={[]} selectedId={null} onSelect={vi.fn()} />);
 
         expect(screen.queryAllByRole("graphics-symbol")).toHaveLength(0);
         expect(screen.getByText("No blips yet")).toBeInTheDocument();
-        expect(screen.getByText("Select a blip marker to see its details.")).toBeInTheDocument();
     });
 
-    it("shows full details for a clicked marker, including a linkified description, and clears on second click", () => {
-        const blips = [
-            makeBlip({
-                id: "b1",
-                name: "Service Mesh",
-                description: "See https://example.com/docs for more.",
-                quadrant_id: "q1",
-                ring_id: "ring1",
-            }),
-        ];
-        render(<RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={blips} />);
-
-        fireEvent.click(screen.getByRole("graphics-symbol"));
-
-        expect(screen.getByRole("heading", { name: "Service Mesh" })).toBeInTheDocument();
-        expect(screen.getByText("Techniques, Adopt")).toBeInTheDocument();
-        expect(screen.getByRole("link", { name: "https://example.com/docs" })).toHaveAttribute(
-            "href",
-            "https://example.com/docs",
-        );
-
-        fireEvent.click(screen.getByRole("graphics-symbol"));
-        expect(screen.getByText("Select a blip marker to see its details.")).toBeInTheDocument();
-    });
-
-    it("shows details for a focused marker and clears them on blur", () => {
+    it("calls onSelect with the blip's id on click and on Enter/Space", () => {
         const blips = [makeBlip({ id: "b1", name: "Service Mesh", quadrant_id: "q1", ring_id: "ring1" })];
-        render(<RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={blips} />);
+        const onSelect = vi.fn();
+        render(<RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={blips} selectedId={null} onSelect={onSelect} />);
 
         const marker = screen.getByRole("graphics-symbol");
-        fireEvent.focus(marker);
-        expect(screen.getByRole("heading", { name: "Service Mesh" })).toBeInTheDocument();
+        fireEvent.click(marker);
+        expect(onSelect).toHaveBeenCalledWith("b1");
 
-        fireEvent.blur(marker);
-        expect(screen.getByText("Select a blip marker to see its details.")).toBeInTheDocument();
+        fireEvent.keyDown(marker, { key: "Enter" });
+        expect(onSelect).toHaveBeenCalledTimes(2);
+
+        fireEvent.keyDown(marker, { key: " " });
+        expect(onSelect).toHaveBeenCalledTimes(3);
     });
 
-    it("never interprets HTML-looking text in the description as markup", () => {
+    it("fills the marker matching selectedId and leaves others unfilled", () => {
         const blips = [
-            makeBlip({
-                id: "b1",
-                name: "Service Mesh",
-                description: "<script>alert(1)</script>",
-                quadrant_id: "q1",
-                ring_id: "ring1",
-            }),
+            makeBlip({ id: "b1", name: "Service Mesh", quadrant_id: "q1", ring_id: "ring1" }),
+            makeBlip({ id: "b2", name: "Feature Flags", quadrant_id: "q2", ring_id: "ring2" }),
         ];
-        const { container } = render(
-            <RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={blips} />,
-        );
+        render(<RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={blips} selectedId="b1" onSelect={vi.fn()} />);
 
-        fireEvent.click(screen.getByRole("graphics-symbol"));
-
-        expect(container.querySelector("script")).not.toBeInTheDocument();
-        expect(screen.getByText("<script>alert(1)</script>", { exact: false })).toBeInTheDocument();
+        const selectedMarker = screen.getByRole("graphics-symbol", { name: "Service Mesh, Techniques, Adopt" });
+        const otherMarker = screen.getByRole("graphics-symbol", { name: "Feature Flags, Tools, Trial" });
+        expect(selectedMarker.querySelector("circle")).toHaveAttribute("fill", "currentColor");
+        expect(otherMarker.querySelector("circle")).toHaveAttribute("fill", "none");
     });
 
     it("renders exactly one marker per blip in a dense sector/ring", () => {
         const denseBlips = Array.from({ length: 40 }, (_, index) =>
             makeBlip({ id: `dense-${index}`, name: `Blip ${index}`, quadrant_id: "q1", ring_id: "ring1" }),
         );
-        render(<RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={denseBlips} />);
+        render(
+            <RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={denseBlips} selectedId={null} onSelect={vi.fn()} />,
+        );
 
         expect(screen.getAllByRole("graphics-symbol")).toHaveLength(denseBlips.length);
     });

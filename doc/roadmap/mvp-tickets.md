@@ -506,6 +506,124 @@ and folds in three refinements it surfaced:
 - Install/upgrade/backup/restore/troubleshooting docs are complete; the release is tagged only
   after the MVP acceptance boundary is fully demonstrated.
 
+---
+
+## Visual design system and workspace polish
+
+> **Note:** these tickets came out of a grilling session on frontend styling/workflow (see
+> `docs/adr/0001-keep-batched-drawer-editing-for-now.md` and
+> `docs/adr/0002-view-and-edit-modes-for-radar-workspace.md`, and the simplified concept
+> mockup in `doc/frontend_design/flow-5-view-edit-concept.html`). They conceptually slot in
+> **after TICKET-017 and before TICKET-018** — the production stack should package the real
+> look, not the unstyled MVP UI — but are appended here to avoid renumbering. Sequence them
+> before TICKET-018 when scheduling.
+
+### TICKET-021: Establish the visual design system
+
+**Depends on:** TICKET-017
+
+**Requirements**
+
+- Port `doc/frontend_design/flow-4-prototype-final.html`'s `:root` CSS custom properties
+  (dark theme only) into `frontend/src/index.css` as the app's real design tokens.
+- Restyle existing chrome against these tokens: buttons, dialogs (`Dialog.tsx` and its users),
+  forms (`NewRadarForm`, `AddBlipDrawer`, `EditBlipDrawer`, `DeleteBlipDialog`), and the blip
+  table.
+
+**Acceptance criteria**
+
+- **Learning notes:** capture terms — CSS custom properties/design tokens, dark-theme-only
+  color contrast (WCAG), restyle vs. rewrite.
+- Every existing component renders using the shared tokens; no component hardcodes a color,
+  radius, or spacing value that duplicates a token.
+- No new CSS framework or dependency is introduced.
+- Existing component tests still pass unchanged (styling only, no behavior change).
+
+### TICKET-022: Add a shared toast confirmation component
+
+**Depends on:** TICKET-021
+
+**Requirements**
+
+- Add one shared toast/notification component (success and error variants).
+- Fire it after every successful radar/blip create, update, and delete.
+
+**Acceptance criteria**
+
+- **Learning notes:** capture terms — transient UI feedback, `aria-live` regions, auto-dismiss
+  timing and accessibility.
+- A success toast appears and auto-dismisses after each create/update/delete action across
+  `NewRadarForm`, `AddBlipDrawer`, `EditBlipDrawer`, and `DeleteBlipDialog`.
+- The toast is announced to assistive tech (e.g. `role="status"` or `aria-live="polite"`) and
+  does not steal focus.
+- Component tests cover the toast appearing and dismissing for at least one success case.
+
+### TICKET-023: Polish the radar SVG rendering
+
+**Depends on:** TICKET-021
+
+**Requirements**
+
+- Add alternating shaded ring bands, ring-colored markers (color keyed to the marker's ring),
+  and a hover/focus scale-up on marker circles to `RadarSvg.tsx`.
+- Add a native SVG `<title>` per marker carrying the blip name for hover-to-see-name (no
+  custom floating tooltip).
+
+**Acceptance criteria**
+
+- **Learning notes:** capture terms — SVG `<title>` accessible tooltip fallback, CSS
+  transform-origin on SVG shapes, deriving a color from ordered ring position.
+- Ring bands and marker colors render for arbitrary ring counts/orders (not hardcoded to four).
+- Hovering or focusing a marker visibly scales it and shows its name via the browser's native
+  tooltip.
+- `RadarSvg.test.tsx` covers ring-band and marker-color rendering for representative data.
+
+### TICKET-024: Add the read-only View mode with quadrant drill-down
+
+**Depends on:** TICKET-021, TICKET-023
+
+**Requirements**
+
+- Add a View mode to `RadarWorkspace`: radar always visible; clicking a blip shows its
+  read-only detail (name, quadrant/ring, full linkified description) in a side panel; clicking
+  a quadrant shows a table of that quadrant's blips grouped by ring in the same side-panel
+  slot. No edit affordances.
+- Add a mode toggle in the workspace header (View/Edit), as local UI state on the same route.
+  Default to View when opening an existing radar from the library, Edit immediately after
+  creating a new radar.
+- On narrow screens, stack the side panel below the radar (no tab toggle needed, since the
+  panel is empty until something is clicked).
+- Remove `BlipTable`'s per-row `<details>` description disclosure now that description display
+  is consolidated into the side panel (update `BlipTable.test.tsx`).
+
+**Acceptance criteria**
+
+- **Learning notes:** capture terms — presentational view-state vs. route state, ARIA live
+  region updates on panel content swap, responsive stacking vs. tabs.
+- Selecting a blip or a quadrant updates the same panel; navigating between them doesn't lose
+  the radar's visibility.
+- View mode never exposes add/edit/delete controls.
+- Default mode is correct for both entry points (library → existing radar; just-created radar).
+- Component tests cover blip selection, quadrant drill-down, mode switching, and the narrow
+  layout.
+
+### TICKET-025: Restyle Edit mode to the design system
+
+**Depends on:** TICKET-021, TICKET-024
+
+**Requirements**
+
+- Apply the design system (tokens, panel chrome) to the existing Edit mode split-screen
+  (today's `RadarWorkspace` radar + table + drawers), so View and Edit modes look consistent.
+
+**Acceptance criteria**
+
+- **Learning notes:** capture terms — visual consistency across view states sharing a
+  component tree.
+- Edit mode's radar, table, and drawers use the same tokens/panel chrome as View mode.
+- No behavior change: Edit mode's existing add/edit/delete/select workflow is unchanged.
+- Existing `RadarWorkspace.test.tsx` coverage still passes.
+
 ## Post-MVP upgrades
 
 ### Upgrade 1 — Custom radar structures and richer editing

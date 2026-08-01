@@ -1,3 +1,5 @@
+import { vi } from "vitest";
+
 import type { Blip, Quadrant, RadarDetail, RadarSummary, Ring } from "../api/radars";
 
 export function makeRadarSummary(overrides: Partial<RadarSummary> = {}): RadarSummary {
@@ -49,5 +51,38 @@ export function makeBlip(overrides: Partial<Blip> = {}): Blip {
         created_at: "2026-01-01T00:00:00Z",
         updated_at: "2026-01-01T00:00:00Z",
         ...overrides,
+    };
+}
+
+/** Stubs `window.matchMedia` for one test; call `setMatches` to simulate a viewport resize. */
+export function stubMatchMedia(initialMatches: boolean) {
+    let matches = initialMatches;
+    let changeHandler: ((event: MediaQueryListEvent) => void) | null = null;
+
+    vi.stubGlobal(
+        "matchMedia",
+        vi.fn().mockImplementation((query: string) => ({
+            get matches() {
+                return matches;
+            },
+            media: query,
+            onchange: null,
+            addEventListener: (_type: "change", handler: (event: MediaQueryListEvent) => void) => {
+                changeHandler = handler;
+            },
+            removeEventListener: () => {
+                changeHandler = null;
+            },
+            addListener: () => { },
+            removeListener: () => { },
+            dispatchEvent: () => false,
+        })),
+    );
+
+    return {
+        setMatches(next: boolean) {
+            matches = next;
+            changeHandler?.({ matches: next } as MediaQueryListEvent);
+        },
     };
 }
