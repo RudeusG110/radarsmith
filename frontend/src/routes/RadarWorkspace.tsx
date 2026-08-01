@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { ApiError, toErrorMessage } from "../api/errors";
@@ -10,6 +10,7 @@ import { DeleteBlipDialog } from "../components/DeleteBlipDialog";
 import { EditBlipDrawer } from "../components/EditBlipDrawer";
 import { RadarSvg } from "../components/RadarSvg";
 import { Tabs, type TabItem } from "../components/Tabs";
+import { indexById } from "../collections";
 import { titleCase } from "../format";
 import { useMediaQuery } from "../useMediaQuery";
 
@@ -31,6 +32,8 @@ export function RadarWorkspace() {
     const [selectedBlipId, setSelectedBlipId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<WorkspaceTab>("radar");
     const isNarrow = useMediaQuery(NARROW_QUERY);
+    const markerRefs = useRef(new Map<string, SVGGElement>());
+    const rowRefs = useRef(new Map<string, HTMLButtonElement>());
 
     const load = useCallback(() => {
         if (radarId === undefined) {
@@ -82,15 +85,38 @@ export function RadarWorkspace() {
         );
     }
 
-    const quadrantById = new Map(radar.quadrants.map((quadrant) => [quadrant.id, quadrant]));
-    const ringById = new Map(radar.rings.map((ring) => [ring.id, ring]));
+    const quadrantById = indexById(radar.quadrants);
+    const ringById = indexById(radar.rings);
     const selectedBlip = radar.blips.find((blip) => blip.id === selectedBlipId) ?? null;
     const selectedQuadrantLabel =
         selectedBlip === null ? "" : titleCase(quadrantById.get(selectedBlip.quadrant_id)?.name ?? "Unknown");
     const selectedRingLabel = selectedBlip === null ? "" : titleCase(ringById.get(selectedBlip.ring_id)?.name ?? "Unknown");
 
-    function handleSelect(id: string) {
-        setSelectedBlipId((current) => (current === id ? null : id));
+    /** Selecting from one surface also moves focus onto the matching element in the other. */
+    function handleSelect(id: string, source: "marker" | "row") {
+        const next = selectedBlipId === id ? null : id;
+        setSelectedBlipId(next);
+        if (next === null) {
+            return;
+        }
+        const target = source === "row" ? markerRefs.current.get(id) : rowRefs.current.get(id);
+        target?.focus();
+    }
+
+    function registerMarkerRef(blipId: string, element: SVGGElement | null) {
+        if (element === null) {
+            markerRefs.current.delete(blipId);
+        } else {
+            markerRefs.current.set(blipId, element);
+        }
+    }
+
+    function registerRowRef(blipId: string, element: HTMLButtonElement | null) {
+        if (element === null) {
+            rowRefs.current.delete(blipId);
+        } else {
+            rowRefs.current.set(blipId, element);
+        }
     }
 
     function handleCreated(blip: Blip) {
@@ -118,7 +144,8 @@ export function RadarWorkspace() {
             rings={radar.rings}
             blips={radar.blips}
             selectedId={selectedBlipId}
-            onSelect={handleSelect}
+            onSelect={(id) => handleSelect(id, "marker")}
+            markerRef={registerMarkerRef}
         />
     );
     const tableView = (
@@ -128,9 +155,10 @@ export function RadarWorkspace() {
             quadrantById={quadrantById}
             ringById={ringById}
             selectedId={selectedBlipId}
-            onSelect={handleSelect}
+            onSelect={(id) => handleSelect(id, "row")}
             onEdit={(blip) => setOpenDialog({ kind: "edit", blip })}
             onDelete={(blip) => setOpenDialog({ kind: "delete", blip })}
+            rowRef={registerRowRef}
         />
     );
 

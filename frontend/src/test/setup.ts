@@ -1,7 +1,8 @@
 import "@testing-library/jest-dom";
 
 // jsdom has no matchMedia implementation; default to "wide" (no narrow-tabs layout) unless a
-// test opts into `stubMatchMedia` from ../test/factories.
+// test opts into `stubMatchMedia` from ./factories. This must NOT use `vi.stubGlobal` (unlike
+// `stubMatchMedia`) since other tests' `vi.unstubAllGlobals()` would wipe out this default too.
 window.matchMedia = ((query: string) =>
     ({
         matches: false,

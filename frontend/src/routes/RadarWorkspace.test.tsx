@@ -177,11 +177,30 @@ describe("RadarWorkspace", () => {
         expect(screen.getByRole("button", { name: "Service Mesh" })).toHaveAttribute("aria-pressed", "true");
         expect(screen.getByRole("graphics-symbol").querySelector("circle")).toHaveAttribute("fill", "currentColor");
         expect(screen.getByRole("heading", { name: "Service Mesh" })).toBeInTheDocument();
+        expect(screen.getByRole("graphics-symbol")).toHaveFocus();
 
         fireEvent.click(screen.getByRole("graphics-symbol"));
 
         expect(screen.getByRole("button", { name: "Service Mesh" })).toHaveAttribute("aria-pressed", "false");
         expect(screen.getByText("Select a blip marker or row to see its details.")).toBeInTheDocument();
+    });
+
+    it("selects and focuses a row when its unselected marker is clicked first", async () => {
+        const quadrant = makeQuadrant({ id: "q1", name: "TECHNIQUES" });
+        const ring = makeRing({ id: "ring1", name: "ADOPT" });
+        const blip = makeBlip({ id: "b1", name: "Service Mesh", quadrant_id: "q1", ring_id: "ring1" });
+        const radar = makeRadarDetail({ quadrants: [quadrant], rings: [ring], blips: [blip] });
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(radar, { status: 200 })));
+        renderWorkspace();
+
+        await screen.findByRole("graphics-symbol");
+        expect(screen.getByRole("button", { name: "Service Mesh" })).toHaveAttribute("aria-pressed", "false");
+
+        fireEvent.click(screen.getByRole("graphics-symbol"));
+
+        expect(screen.getByRole("button", { name: "Service Mesh" })).toHaveAttribute("aria-pressed", "true");
+        expect(screen.getByRole("button", { name: "Service Mesh" })).toHaveFocus();
+        expect(screen.getByRole("heading", { name: "Service Mesh" })).toBeInTheDocument();
     });
 
     it("shows Radar/Blips tabs on narrow screens and preserves selection across tab switches", async () => {

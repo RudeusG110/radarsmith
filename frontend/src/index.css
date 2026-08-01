@@ -69,6 +69,16 @@ td {
     font: inherit;
     text-align: left;
     cursor: pointer;
+    display: inline-block;
+    max-width: 16rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: bottom;
+}
+
+.blip-table td:last-child {
+    white-space: nowrap;
 }
 
 tr.selected {

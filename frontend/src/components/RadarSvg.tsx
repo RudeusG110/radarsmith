@@ -1,4 +1,5 @@
 import type { Blip, Quadrant, Ring } from "../api/radars";
+import { indexById } from "../collections";
 import { titleCase } from "../format";
 import {
     computeRadarGeometry,
@@ -14,16 +15,18 @@ export interface RadarSvgProps {
     blips: Blip[];
     selectedId: string | null;
     onSelect: (id: string) => void;
+    /** Lets a parent move DOM focus onto a marker, e.g. when its row is selected. */
+    markerRef?: (blipId: string, element: SVGGElement | null) => void;
 }
 
 /** Fixed square viewBox size; geometry scales every distance as a fraction of this. */
 const SIZE = 600;
 const MARKER_RADIUS = 8;
 
-export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSelect }: RadarSvgProps) {
-    const quadrantById = new Map(quadrants.map((quadrant) => [quadrant.id, quadrant]));
-    const ringById = new Map(rings.map((ring) => [ring.id, ring]));
-    const blipById = new Map(blips.map((blip) => [blip.id, blip]));
+export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSelect, markerRef }: RadarSvgProps) {
+    const quadrantById = indexById(quadrants);
+    const ringById = indexById(rings);
+    const blipById = indexById(blips);
 
     const sectorInputs: GeometrySectorInput[] = quadrants.map((quadrant) => ({ id: quadrant.id, position: quadrant.position }));
     const ringInputs: GeometryRingInput[] = rings.map((ring) => ({ id: ring.id, position: ring.position }));
@@ -94,6 +97,7 @@ export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSel
                 return (
                     <g
                         key={blip.id}
+                        ref={(element) => markerRef?.(blip.id, element)}
                         role="graphics-symbol img"
                         aria-label={`${blip.name}, ${quadrantLabel}, ${ringLabel}`}
                         tabIndex={0}

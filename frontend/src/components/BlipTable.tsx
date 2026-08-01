@@ -10,16 +10,28 @@ export interface BlipTableProps {
     onSelect: (id: string) => void;
     onEdit: (blip: Blip) => void;
     onDelete: (blip: Blip) => void;
+    /** Lets a parent move DOM focus onto a row, e.g. when its marker is selected. */
+    rowRef?: (blipId: string, element: HTMLButtonElement | null) => void;
 }
 
-export function BlipTable({ radarName, blips, quadrantById, ringById, selectedId, onSelect, onEdit, onDelete }: BlipTableProps) {
+export function BlipTable({
+    radarName,
+    blips,
+    quadrantById,
+    ringById,
+    selectedId,
+    onSelect,
+    onEdit,
+    onDelete,
+    rowRef,
+}: BlipTableProps) {
     if (blips.length === 0) {
         return <p>No blips yet.</p>;
     }
 
     return (
         <div className="table-scroll">
-            <table>
+            <table className="blip-table">
                 <caption className="visually-hidden">Blips for {radarName}</caption>
                 <thead>
                     <tr>
@@ -36,7 +48,13 @@ export function BlipTable({ radarName, blips, quadrantById, ringById, selectedId
                         return (
                             <tr key={blip.id} className={isSelected ? "selected" : undefined}>
                                 <td>
-                                    <button type="button" className="name-toggle" aria-pressed={isSelected} onClick={() => onSelect(blip.id)}>
+                                    <button
+                                        type="button"
+                                        ref={(element) => rowRef?.(blip.id, element)}
+                                        className="name-toggle"
+                                        aria-pressed={isSelected}
+                                        onClick={() => onSelect(blip.id)}
+                                    >
                                         {blip.name}
                                     </button>
                                 </td>
