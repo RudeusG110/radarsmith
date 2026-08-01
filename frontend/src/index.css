@@ -224,6 +224,9 @@ td {
 
 .view-grid {
     grid-template-columns: var(--workspace-radar-col) var(--workspace-side-col);
+    /* Stretches the side panel to the radar panel's actual height so it stays put and scrolls
+       internally instead of resizing with content (edit-grid keeps the default `start`). */
+    align-items: stretch;
 }
 
 .edit-grid {
@@ -408,8 +411,9 @@ tr.selected {
     color: var(--muted);
 }
 
-/* Caps the side panel to roughly the radar's own height (same token) so long text scrolls in
-   place instead of growing the page past it — the radar is the dominant, tallest panel by design. */
+/* Backstop only: `align-items: stretch` on .view-grid normally makes this match the radar
+   panel's real height. This cap just stops an unusually long description from inflating the
+   grid row (and the radar panel with it) past the radar's own max size. */
 .side-panel {
     max-height: calc(var(--radar-max-size) + 82px);
 }
