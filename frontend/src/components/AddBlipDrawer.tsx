@@ -4,6 +4,7 @@ import { toErrorMessage } from "../api/errors";
 import { createBlip, type Blip, type Quadrant, type Ring } from "../api/radars";
 import { titleCase } from "../format";
 import { Dialog } from "./Dialog";
+import { useToast } from "../toast";
 
 interface AddBlipDrawerProps {
     radarId: string;
@@ -25,6 +26,7 @@ export function AddBlipDrawer({ radarId, quadrants, rings, onCreated, onCancel }
     const nameInputRef = useRef<HTMLInputElement>(null);
     const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
     const submitErrorRef = useRef<HTMLParagraphElement>(null);
+    const { showToast } = useToast();
 
     async function handleSubmit(event: React.FormEvent) {
         event.preventDefault();
@@ -53,6 +55,7 @@ export function AddBlipDrawer({ radarId, quadrants, rings, onCreated, onCancel }
                 quadrant_id: quadrantId,
                 ring_id: ringId,
             });
+            showToast(`Blip "${blip.name}" added.`, "success");
             onCreated(blip);
         } catch (error) {
             setSubmitting(false);

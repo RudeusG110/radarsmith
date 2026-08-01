@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { toErrorMessage } from "../api/errors";
 import { deleteBlip, type Blip } from "../api/radars";
 import { Dialog } from "./Dialog";
+import { useToast } from "../toast";
 
 interface DeleteBlipDialogProps {
     radarId: string;
@@ -15,6 +16,7 @@ export function DeleteBlipDialog({ radarId, blip, onDeleted, onCancel }: DeleteB
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const submitErrorRef = useRef<HTMLParagraphElement>(null);
+    const { showToast } = useToast();
 
     async function handleDelete() {
         setSubmitError(null);
@@ -22,6 +24,7 @@ export function DeleteBlipDialog({ radarId, blip, onDeleted, onCancel }: DeleteB
 
         try {
             await deleteBlip(radarId, blip.id);
+            showToast(`Blip "${blip.name}" deleted.`, "success");
             onDeleted(blip.id);
         } catch (error) {
             setSubmitting(false);
