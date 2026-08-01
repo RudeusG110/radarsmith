@@ -132,10 +132,10 @@ export function EditBlipDrawer({ radarId, blip, quadrants, rings, onSaved, onCan
                         {submitError}
                     </p>
                 )}
-                <button type="submit" disabled={!isDirty || submitting}>
+                <button type="submit" className="btn primary" disabled={!isDirty || submitting}>
                     {submitting ? "Saving…" : "Save"}
                 </button>
-                <button type="button" onClick={onCancel} disabled={submitting}>
+                <button type="button" className="btn" onClick={onCancel} disabled={submitting}>
                     Cancel
                 </button>
             </form>

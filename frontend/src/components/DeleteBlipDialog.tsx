@@ -40,10 +40,10 @@ export function DeleteBlipDialog({ radarId, blip, onDeleted, onCancel }: DeleteB
                     {submitError}
                 </p>
             )}
-            <button type="button" onClick={() => void handleDelete()} disabled={submitting}>
+            <button type="button" className="btn danger" onClick={() => void handleDelete()} disabled={submitting}>
                 {submitting ? "Deleting…" : "Delete"}
             </button>
-            <button type="button" onClick={onCancel} disabled={submitting}>
+            <button type="button" className="btn" onClick={onCancel} disabled={submitting}>
                 Cancel
             </button>
         </Dialog>

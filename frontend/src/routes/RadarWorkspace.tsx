@@ -70,7 +70,7 @@ export function RadarWorkspace() {
         return (
             <main>
                 <p role="alert">{loadError}</p>
-                <button type="button" onClick={load}>
+                <button type="button" className="btn" onClick={load}>
                     Try again
                 </button>
             </main>
@@ -172,7 +172,7 @@ export function RadarWorkspace() {
                 <dt>Rings</dt>
                 <dd>{radar.rings.map((ring) => titleCase(ring.name)).join(", ")}</dd>
             </dl>
-            <button type="button" onClick={() => setOpenDialog({ kind: "add" })}>
+            <button type="button" className="btn primary" onClick={() => setOpenDialog({ kind: "add" })}>
                 + Add Blip
             </button>
             {isNarrow ? (

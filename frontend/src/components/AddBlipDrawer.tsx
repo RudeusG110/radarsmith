@@ -123,10 +123,10 @@ export function AddBlipDrawer({ radarId, quadrants, rings, onCreated, onCancel }
                         {submitError}
                     </p>
                 )}
-                <button type="submit" disabled={submitting}>
+                <button type="submit" className="btn primary" disabled={submitting}>
                     {submitting ? "Adding…" : "Add blip"}
                 </button>
-                <button type="button" onClick={onCancel} disabled={submitting}>
+                <button type="button" className="btn" onClick={onCancel} disabled={submitting}>
                     Cancel
                 </button>
             </form>
