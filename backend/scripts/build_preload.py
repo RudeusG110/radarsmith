@@ -33,7 +33,7 @@ NAMESPACE = UUID("6f9619ff-8b86-d011-b42d-00c04fc964ff")
 
 CORPUS_PATH = Path(__file__).resolve().parents[2] / "corpus.json"
 
-RADAR_NAME = "Technology Radar"
+RADAR_NAME = "Thoughtworks Technology Radar — Volume 34"
 RADAR_PURPOSE = "Starter radar preloaded from the Thoughtworks Technology Radar, Volume 34 (April 2026)."
 
 NAME_MAX_LENGTH = 100

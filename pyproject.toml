@@ -6,6 +6,10 @@ authors = [{ name = "Your Name", email = "you@example.com" }]
 license = ""
 readme = "README.md"
 
+[tool.poetry]
+# App, not a distributable package — metadata lives in [project] (PEP 621) instead.
+package-mode = false
+
 [tool.poetry.dependencies]
 python = "^3.13"
 fastapi = "^0.139.2"

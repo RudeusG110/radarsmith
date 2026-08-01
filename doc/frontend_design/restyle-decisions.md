@@ -130,3 +130,7 @@ becomes instant. What changes is presentation, not save semantics:
 - Full responsive/breakpoint design for the radar at all viewport sizes (section 4).
 - Final visual treatment for surfacing blip descriptions outside the edit form/View mode panel
   (section 8) — hover, expand, or show-more in the table.
+
+
+# TODO:
+- fix can only run docker stuff in wsl, schema in vscode terminal
