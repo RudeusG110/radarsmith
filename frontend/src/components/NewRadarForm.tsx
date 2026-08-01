@@ -77,10 +77,10 @@ export function NewRadarForm({ onCreated, onCancel }: NewRadarFormProps) {
                     {submitError}
                 </p>
             )}
-            <button type="submit" disabled={submitting}>
+            <button type="submit" className="btn primary" disabled={submitting}>
                 {submitting ? "Creating…" : "Create radar"}
             </button>
-            <button type="button" onClick={onCancel} disabled={submitting}>
+            <button type="button" className="btn" onClick={onCancel} disabled={submitting}>
                 Cancel
             </button>
         </form>

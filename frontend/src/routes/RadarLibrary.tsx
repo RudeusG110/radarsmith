@@ -27,7 +27,7 @@ export function RadarLibrary() {
     return (
         <main>
             <h1>Radars</h1>
-            <button type="button" onClick={() => setShowCreateForm(true)}>
+            <button type="button" className="btn primary" onClick={() => setShowCreateForm(true)}>
                 + New Radar
             </button>
             {showCreateForm && (
@@ -39,7 +39,7 @@ export function RadarLibrary() {
             {loadError !== null && (
                 <div>
                     <p role="alert">{loadError}</p>
-                    <button type="button" onClick={load}>
+                    <button type="button" className="btn" onClick={load}>
                         Try again
                     </button>
                 </div>

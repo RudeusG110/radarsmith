@@ -67,10 +67,10 @@ export function BlipTable({
                                     </details>
                                 </td>
                                 <td>
-                                    <button type="button" onClick={() => onEdit(blip)}>
+                                    <button type="button" className="btn" onClick={() => onEdit(blip)}>
                                         Edit<span className="visually-hidden"> {blip.name}</span>
                                     </button>
-                                    <button type="button" onClick={() => onDelete(blip)}>
+                                    <button type="button" className="btn danger" onClick={() => onDelete(blip)}>
                                         Delete<span className="visually-hidden"> {blip.name}</span>
                                     </button>
                                 </td>
