@@ -217,35 +217,53 @@ export function RadarWorkspace() {
             rowRef={registerRowRef}
         />
     );
+    const blipsPanel = (
+        <div className="panel">
+            <div className="panel-title">
+                Blips
+                <button type="button" className="btn primary" onClick={() => setOpenDialog({ kind: "add" })}>
+                    + Add Blip
+                </button>
+            </div>
+            {tableView}
+        </div>
+    );
 
     return (
         <main>
-            <h1>{radar.name}</h1>
-            <p>{radar.purpose ?? "No purpose set"}</p>
+            <div className="workspace-header">
+                <div>
+                    <Link to="/radars" className="back-link">
+                        ← Back to radar library
+                    </Link>
+                    <h1>{radar.name}</h1>
+                    <p>{radar.purpose ?? "No purpose set"}</p>
+                </div>
+                <div className="mode-toggle" role="group" aria-label="Workspace mode">
+                    <button
+                        type="button"
+                        className={mode === "view" ? "active" : undefined}
+                        aria-pressed={mode === "view"}
+                        onClick={() => handleModeChange("view")}
+                    >
+                        View
+                    </button>
+                    <button
+                        type="button"
+                        className={mode === "edit" ? "active" : undefined}
+                        aria-pressed={mode === "edit"}
+                        onClick={() => handleModeChange("edit")}
+                    >
+                        Edit
+                    </button>
+                </div>
+            </div>
             <dl>
                 <dt>Quadrants</dt>
                 <dd>{radar.quadrants.map((quadrant) => titleCase(quadrant.name)).join(", ")}</dd>
                 <dt>Rings</dt>
                 <dd>{radar.rings.map((ring) => titleCase(ring.name)).join(", ")}</dd>
             </dl>
-            <div className="mode-toggle" role="group" aria-label="Workspace mode">
-                <button
-                    type="button"
-                    className={mode === "view" ? "active" : undefined}
-                    aria-pressed={mode === "view"}
-                    onClick={() => handleModeChange("view")}
-                >
-                    View
-                </button>
-                <button
-                    type="button"
-                    className={mode === "edit" ? "active" : undefined}
-                    aria-pressed={mode === "edit"}
-                    onClick={() => handleModeChange("edit")}
-                >
-                    Edit
-                </button>
-            </div>
             {mode === "view" ? (
                 <div className="view-grid">
                     <RadarSvg
@@ -261,9 +279,6 @@ export function RadarWorkspace() {
                 </div>
             ) : (
                 <>
-                    <button type="button" className="btn primary" onClick={() => setOpenDialog({ kind: "add" })}>
-                        + Add Blip
-                    </button>
                     {isNarrow ? (
                         <>
                             <Tabs
@@ -276,16 +291,21 @@ export function RadarWorkspace() {
                                 {editRadarView}
                             </div>
                             <div role="tabpanel" id="blips-panel" aria-labelledby="blips-tab" hidden={activeTab !== "blips"}>
-                                {tableView}
+                                {blipsPanel}
                             </div>
                         </>
                     ) : (
-                        <div className="workspace-grid">
+                        <div className="edit-grid">
                             {editRadarView}
-                            {tableView}
+                            {blipsPanel}
                         </div>
                     )}
-                    <BlipDetailPanel blip={selectedBlip} quadrantLabel={selectedQuadrantLabel} ringLabel={selectedRingLabel} />
+                    <div className="panel side-panel">
+                        <div className="panel-title">Details</div>
+                        <div className="panel-body">
+                            <BlipDetailPanel blip={selectedBlip} quadrantLabel={selectedQuadrantLabel} ringLabel={selectedRingLabel} />
+                        </div>
+                    </div>
                 </>
             )}
             {openDialog?.kind === "add" && (

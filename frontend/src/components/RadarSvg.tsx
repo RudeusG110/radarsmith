@@ -24,7 +24,7 @@ export interface RadarSvgProps {
 
 /** Fixed square viewBox size; geometry scales every distance as a fraction of this. */
 const SIZE = 600;
-const MARKER_RADIUS = 8;
+const MARKER_RADIUS = 10;
 
 export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSelect, markerRef, onSelectQuadrant }: RadarSvgProps) {
     const quadrantById = indexById(quadrants);
@@ -138,7 +138,7 @@ export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSel
                             stroke={isSelected ? "var(--accent)" : "var(--bg)"}
                             strokeWidth={isSelected ? 2 : 1}
                         />
-                        <text x={marker.x} y={marker.y} textAnchor="middle" dominantBaseline="middle" aria-hidden="true">
+                        <text x={marker.x} y={marker.y} textAnchor="middle" dominantBaseline="middle" className="marker-number" aria-hidden="true">
                             {index + 1}
                         </text>
                     </g>
