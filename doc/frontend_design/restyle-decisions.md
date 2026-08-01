@@ -134,3 +134,4 @@ becomes instant. What changes is presentation, not save semantics:
 
 # TODO:
 - fix can only run docker stuff in wsl, schema in vscode terminal
+- description scrollable + fix size

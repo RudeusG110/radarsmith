@@ -236,6 +236,10 @@ td {
     .edit-grid {
         grid-template-columns: minmax(0, 1fr);
     }
+
+    .side-panel {
+        max-height: none;
+    }
 }
 
 .tab {
@@ -380,12 +384,17 @@ tr.selected {
 }
 
 .panel {
+    display: flex;
+    flex-direction: column;
+    /* Lets a flex column shrink below its content's natural height so a child can scroll instead of grow. */
+    min-height: 0;
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: var(--radius);
 }
 
 .panel-title {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -399,12 +408,18 @@ tr.selected {
     color: var(--muted);
 }
 
+/* Caps the side panel to roughly the radar's own height (same token) so long text scrolls in
+   place instead of growing the page past it — the radar is the dominant, tallest panel by design. */
+.side-panel {
+    max-height: calc(var(--radar-max-size) + 82px);
+}
+
 .side-panel .panel-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     padding: 1rem;
     font-size: 14px;
-    /* Caps the panel to roughly one viewport instead of growing the whole page for long text. */
-    max-height: calc(100vh - 220px);
-    overflow-y: auto;
 }
 
 .side-panel .empty {
