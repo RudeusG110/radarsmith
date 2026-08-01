@@ -209,15 +209,20 @@ export function RadarWorkspace() {
     }
 
     const editRadarView = (
-        <RadarSvg
-            radarName={radar.name}
-            quadrants={radar.quadrants}
-            rings={radar.rings}
-            blips={radar.blips}
-            selectedId={selectedBlipId}
-            onSelect={(id) => handleSelect(id, "marker")}
-            markerRef={registerMarkerRef}
-        />
+        <div className="panel radar-panel">
+            <div className="panel-title">Radar</div>
+            <div className="radar-wrap">
+                <RadarSvg
+                    radarName={radar.name}
+                    quadrants={radar.quadrants}
+                    rings={radar.rings}
+                    blips={radar.blips}
+                    selectedId={selectedBlipId}
+                    onSelect={(id) => handleSelect(id, "marker")}
+                    markerRef={registerMarkerRef}
+                />
+            </div>
+        </div>
     );
     const tableView = (
         <BlipTable
@@ -256,15 +261,20 @@ export function RadarWorkspace() {
             </dl>
             {mode === "view" ? (
                 <div className="view-grid">
-                    <RadarSvg
-                        radarName={radar.name}
-                        quadrants={radar.quadrants}
-                        rings={radar.rings}
-                        blips={radar.blips}
-                        selectedId={viewSelection?.kind === "blip" ? viewSelection.blipId : null}
-                        onSelect={handleSelectViewBlip}
-                        onSelectQuadrant={handleSelectViewQuadrant}
-                    />
+                    <div className="panel radar-panel">
+                        <div className="panel-title">Radar</div>
+                        <div className="radar-wrap">
+                            <RadarSvg
+                                radarName={radar.name}
+                                quadrants={radar.quadrants}
+                                rings={radar.rings}
+                                blips={radar.blips}
+                                selectedId={viewSelection?.kind === "blip" ? viewSelection.blipId : null}
+                                onSelect={handleSelectViewBlip}
+                                onSelectQuadrant={handleSelectViewQuadrant}
+                            />
+                        </div>
+                    </div>
                     <RadarViewPanel selection={viewPanelSelection} onSelectBlip={handleSelectViewBlip} />
                 </div>
             ) : (

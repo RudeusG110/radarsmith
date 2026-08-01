@@ -28,6 +28,8 @@
     --workspace-breakpoint: 860px;
     --workspace-radar-col: minmax(0, 1fr);
     --workspace-side-col: minmax(0, 420px);
+    /* Wider than --workspace-side-col: Edit's 4-column blip table needs more room than View's text panel. */
+    --workspace-table-col: minmax(0, 560px);
     --workspace-gap: 1.5rem;
     --radar-max-size: 900px;
     /* Wider than the default `main` reading width — the workspace is a visual/graphical layout, not text. */
@@ -216,9 +218,16 @@ td {
 .view-grid,
 .edit-grid {
     display: grid;
-    grid-template-columns: var(--workspace-radar-col) var(--workspace-side-col);
     gap: var(--workspace-gap);
     align-items: start;
+}
+
+.view-grid {
+    grid-template-columns: var(--workspace-radar-col) var(--workspace-side-col);
+}
+
+.edit-grid {
+    grid-template-columns: var(--workspace-radar-col) var(--workspace-table-col);
 }
 
 @media (max-width: 860px) {
@@ -278,6 +287,10 @@ td {
 
 tr.selected {
     background: var(--accent-soft);
+}
+
+.radar-wrap {
+    padding: 1.25rem;
 }
 
 .radar-svg {
