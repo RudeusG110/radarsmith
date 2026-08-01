@@ -2,17 +2,22 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { TopBar } from "../components/TopBar";
+import { WorkspaceChromeProvider } from "../components/WorkspaceChromeProvider";
 import { makeBlip, makeQuadrant, makeRadarDetail, makeRing, stubMatchMedia } from "../test/factories";
 import { RadarWorkspace } from "./RadarWorkspace";
 
 function renderWorkspace(radarId = "r1", locationState?: { justCreated: boolean }) {
     render(
-        <MemoryRouter initialEntries={[{ pathname: `/radars/${radarId}`, state: locationState }]}>
-            <Routes>
-                <Route path="/radars" element={<p>Radar library</p>} />
-                <Route path="/radars/:radarId" element={<RadarWorkspace />} />
-            </Routes>
-        </MemoryRouter>,
+        <WorkspaceChromeProvider>
+            <MemoryRouter initialEntries={[{ pathname: `/radars/${radarId}`, state: locationState }]}>
+                <TopBar />
+                <Routes>
+                    <Route path="/radars" element={<p>Radar library</p>} />
+                    <Route path="/radars/:radarId" element={<RadarWorkspace />} />
+                </Routes>
+            </MemoryRouter>
+        </WorkspaceChromeProvider>,
     );
 }
 

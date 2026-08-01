@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 
 import { ApiError, toErrorMessage } from "../api/errors";
@@ -14,10 +14,10 @@ import { Tabs, type TabItem } from "../components/Tabs";
 import { indexById } from "../collections";
 import { titleCase } from "../format";
 import { useMediaQuery } from "../useMediaQuery";
+import { useWorkspaceChrome, type WorkspaceMode } from "../workspaceChrome";
 
 type OpenDialog = { kind: "add" } | { kind: "edit"; blip: Blip } | { kind: "delete"; blip: Blip } | null;
 type WorkspaceTab = "radar" | "blips";
-type WorkspaceMode = "view" | "edit";
 type ViewSelectionState = { kind: "blip"; blipId: string } | { kind: "quadrant"; quadrantId: string } | null;
 
 const NARROW_QUERY = "(max-width: 860px)";
@@ -40,6 +40,12 @@ export function RadarWorkspace() {
     const isNarrow = useMediaQuery(NARROW_QUERY);
     const markerRefs = useRef(new Map<string, SVGGElement>());
     const rowRefs = useRef(new Map<string, HTMLButtonElement>());
+    const { setChrome } = useWorkspaceChrome();
+
+    const handleModeChange = useCallback((next: WorkspaceMode) => {
+        setMode(next);
+        setOpenDialog(null);
+    }, []);
 
     const load = useCallback(() => {
         if (radarId === undefined) {
@@ -69,6 +75,20 @@ export function RadarWorkspace() {
         setMode(justCreated ? "edit" : "view");
         setViewSelection(null);
     }, [radarId, location.state]);
+
+    /**
+     * Publishes the crumb/mode-toggle to the persistent TopBar instead of rendering them here.
+     * Uses useLayoutEffect (not useEffect) so it commits synchronously with the radar/mode
+     * render it depends on, instead of one tick later.
+     */
+    useLayoutEffect(() => {
+        if (radar === null) {
+            setChrome(null);
+            return;
+        }
+        setChrome({ radarName: radar.name, mode, onModeChange: handleModeChange });
+        return () => setChrome(null);
+    }, [radar, mode, handleModeChange, setChrome]);
 
     if (notFound) {
         return (
@@ -144,11 +164,6 @@ export function RadarWorkspace() {
         }
         const target = source === "row" ? markerRefs.current.get(id) : rowRefs.current.get(id);
         target?.focus();
-    }
-
-    function handleModeChange(next: WorkspaceMode) {
-        setMode(next);
-        setOpenDialog(null);
     }
 
     function handleSelectViewBlip(id: string) {
@@ -231,33 +246,8 @@ export function RadarWorkspace() {
 
     return (
         <main>
-            <div className="workspace-header">
-                <div>
-                    <Link to="/radars" className="back-link">
-                        ← Back to radar library
-                    </Link>
-                    <h1>{radar.name}</h1>
-                    <p>{radar.purpose ?? "No purpose set"}</p>
-                </div>
-                <div className="mode-toggle" role="group" aria-label="Workspace mode">
-                    <button
-                        type="button"
-                        className={mode === "view" ? "active" : undefined}
-                        aria-pressed={mode === "view"}
-                        onClick={() => handleModeChange("view")}
-                    >
-                        View
-                    </button>
-                    <button
-                        type="button"
-                        className={mode === "edit" ? "active" : undefined}
-                        aria-pressed={mode === "edit"}
-                        onClick={() => handleModeChange("edit")}
-                    >
-                        Edit
-                    </button>
-                </div>
-            </div>
+            <h1>{radar.name}</h1>
+            <p>{radar.purpose ?? "No purpose set"}</p>
             <dl>
                 <dt>Quadrants</dt>
                 <dd>{radar.quadrants.map((quadrant) => titleCase(quadrant.name)).join(", ")}</dd>
