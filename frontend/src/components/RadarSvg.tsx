@@ -7,6 +7,7 @@ import {
     type RingInput as GeometryRingInput,
     type SectorInput as GeometrySectorInput,
 } from "../geometry/radarGeometry";
+import { ringColor } from "../ringColor";
 
 export interface RadarSvgProps {
     radarName: string;
@@ -33,6 +34,8 @@ export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSel
     const blipInputs: GeometryBlipInput[] = blips.map((blip) => ({ id: blip.id, quadrantId: blip.quadrant_id, ringId: blip.ring_id }));
 
     const geometry = computeRadarGeometry({ quadrants: sectorInputs, rings: ringInputs, blips: blipInputs }, { size: SIZE });
+    // geometry.rings is ordered ascending by position, so array index doubles as ring order.
+    const ringIndexById = new Map(geometry.rings.map((ring, index) => [ring.ringId, index]));
 
     function handleMarkerKeyDown(event: React.KeyboardEvent<SVGGElement>, blipId: string) {
         if (event.key === "Enter" || event.key === " ") {
@@ -43,19 +46,20 @@ export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSel
 
     return (
         <svg
+            className="radar-svg"
             viewBox={`0 0 ${geometry.viewBoxSize} ${geometry.viewBoxSize}`}
             width="100%"
             height="100%"
             role="graphics-document"
             aria-label={`${radarName} radar`}
         >
-            {geometry.rings.map((ring) => (
+            {[...geometry.rings].reverse().map((ring, index) => (
                 <circle
                     key={ring.ringId}
                     cx={geometry.center.x}
                     cy={geometry.center.y}
                     r={ring.outerRadius}
-                    fill="none"
+                    fill={index % 2 === 0 ? "var(--panel-2)" : "var(--panel)"}
                     stroke="currentColor"
                 />
             ))}
@@ -94,6 +98,7 @@ export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSel
                 const quadrantLabel = titleCase(quadrantById.get(marker.quadrantId)?.name ?? "");
                 const ringLabel = titleCase(ringById.get(marker.ringId)?.name ?? "");
                 const isSelected = selectedId === blip.id;
+                const color = ringColor(ringIndexById.get(marker.ringId) ?? 0, geometry.rings.length);
                 return (
                     <g
                         key={blip.id}
@@ -105,12 +110,14 @@ export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSel
                         onKeyDown={(event) => handleMarkerKeyDown(event, blip.id)}
                         style={{ cursor: "pointer" }}
                     >
+                        <title>{blip.name}</title>
                         <circle
                             cx={marker.x}
                             cy={marker.y}
                             r={MARKER_RADIUS}
-                            fill={isSelected ? "currentColor" : "none"}
-                            stroke="currentColor"
+                            fill={color}
+                            stroke={isSelected ? "var(--accent)" : "var(--bg)"}
+                            strokeWidth={isSelected ? 2 : 1}
                         />
                         <text x={marker.x} y={marker.y} textAnchor="middle" dominantBaseline="middle" aria-hidden="true">
                             {index + 1}
