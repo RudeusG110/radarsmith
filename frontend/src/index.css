@@ -302,6 +302,50 @@ tr.selected {
     padding: 1.25rem;
 }
 
+.radar-glossary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0 1.25rem 1.25rem;
+}
+
+.glossary-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.glossary-label {
+    flex-shrink: 0;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.glossary-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.glossary-list .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.ring-swatch {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
 .radar-svg {
     display: block;
     width: 100%;

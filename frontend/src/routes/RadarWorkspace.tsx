@@ -8,6 +8,7 @@ import { BlipDetailPanel } from "../components/BlipDetailPanel";
 import { BlipTable } from "../components/BlipTable";
 import { DeleteBlipDialog } from "../components/DeleteBlipDialog";
 import { EditBlipDrawer } from "../components/EditBlipDrawer";
+import { RadarGlossary } from "../components/RadarGlossary";
 import { RadarSvg } from "../components/RadarSvg";
 import { RadarViewPanel, type RadarViewSelection } from "../components/RadarViewPanel";
 import { Tabs, type TabItem } from "../components/Tabs";
@@ -222,6 +223,7 @@ export function RadarWorkspace() {
                     markerRef={registerMarkerRef}
                 />
             </div>
+            <RadarGlossary quadrants={radar.quadrants} rings={radar.rings} />
         </div>
     );
     const tableView = (
@@ -253,12 +255,6 @@ export function RadarWorkspace() {
         <main className="workspace-main">
             <h1>{radar.name}</h1>
             <p>{radar.purpose ?? "No purpose set"}</p>
-            <dl>
-                <dt>Quadrants</dt>
-                <dd>{radar.quadrants.map((quadrant) => titleCase(quadrant.name)).join(", ")}</dd>
-                <dt>Rings</dt>
-                <dd>{radar.rings.map((ring) => titleCase(ring.name)).join(", ")}</dd>
-            </dl>
             {mode === "view" ? (
                 <div className="view-grid">
                     <div className="panel radar-panel">
@@ -274,6 +270,7 @@ export function RadarWorkspace() {
                                 onSelectQuadrant={handleSelectViewQuadrant}
                             />
                         </div>
+                        <RadarGlossary quadrants={radar.quadrants} rings={radar.rings} />
                     </div>
                     <RadarViewPanel selection={viewPanelSelection} onSelectBlip={handleSelectViewBlip} />
                 </div>

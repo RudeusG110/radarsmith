@@ -87,6 +87,7 @@ extends the existing token system in `frontend/src/index.css` (from TICKET-021).
 - How description should ultimately be surfaced in Edit mode (table hover/expand/show-more) is
   explicitly **deferred** — "we will see how to style it later." Nothing to build for it now
   beyond removing it from the bottom panel.
+- Also following the view example make it scrollable and fixed size to radar
 
 ## 9. Blip table interaction fixes
 
