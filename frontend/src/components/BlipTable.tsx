@@ -45,14 +45,17 @@ export function BlipTable({
                     {blips.map((blip) => {
                         const isSelected = blip.id === selectedId;
                         return (
-                            <tr key={blip.id} className={isSelected ? "selected" : undefined}>
+                            <tr
+                                key={blip.id}
+                                className={isSelected ? "selected" : undefined}
+                                onClick={() => onSelect(blip.id)}
+                            >
                                 <td>
                                     <button
                                         type="button"
                                         ref={(element) => rowRef?.(blip.id, element)}
                                         className="name-toggle"
                                         aria-pressed={isSelected}
-                                        onClick={() => onSelect(blip.id)}
                                     >
                                         {blip.name}
                                     </button>
@@ -61,10 +64,24 @@ export function BlipTable({
                                 <td>{titleCase(ringById.get(blip.ring_id)?.name ?? "Unknown")}</td>
                                 <td>
                                     <div className="row-actions">
-                                        <button type="button" className="btn" onClick={() => onEdit(blip)}>
+                                        <button
+                                            type="button"
+                                            className="btn"
+                                            onClick={(event) => {
+                                                event.stopPropagation();
+                                                onEdit(blip);
+                                            }}
+                                        >
                                             Edit<span className="visually-hidden"> {blip.name}</span>
                                         </button>
-                                        <button type="button" className="btn danger" onClick={() => onDelete(blip)}>
+                                        <button
+                                            type="button"
+                                            className="btn danger"
+                                            onClick={(event) => {
+                                                event.stopPropagation();
+                                                onDelete(blip);
+                                            }}
+                                        >
                                             Delete<span className="visually-hidden"> {blip.name}</span>
                                         </button>
                                     </div>
