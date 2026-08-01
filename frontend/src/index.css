@@ -18,6 +18,20 @@
     --radius: 10px;
     /* Tells the browser to use dark-mode defaults for unstyled native form controls. */
     color-scheme: dark;
+
+    /*
+     * Workspace layout tokens (View/Edit radar + companion panel grids). Tune these — not the
+     * grids themselves — when reworking responsive behavior later. `--workspace-breakpoint` is
+     * documentation only (custom properties can't be used inside @media conditions); keep the
+     * literal 860px in the grids' @media rules and in useMediaQuery's NARROW_QUERY in sync with it.
+     */
+    --workspace-breakpoint: 860px;
+    --workspace-radar-col: minmax(0, 1fr);
+    --workspace-side-col: minmax(0, 420px);
+    --workspace-gap: 1.5rem;
+    --radar-max-size: 900px;
+    /* Wider than the default `main` reading width — the workspace is a visual/graphical layout, not text. */
+    --workspace-max-width: 96rem;
 }
 
 * {
@@ -42,6 +56,10 @@ main {
     width: 100%;
     margin: 0 auto;
     padding: 1.5rem 1.25rem;
+}
+
+.workspace-main {
+    max-width: var(--workspace-max-width);
 }
 
 button {
@@ -195,14 +213,17 @@ td {
     border-color: var(--danger);
 }
 
+.view-grid,
 .edit-grid {
     display: grid;
-    grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
-    gap: 1.125rem;
+    grid-template-columns: var(--workspace-radar-col) var(--workspace-side-col);
+    gap: var(--workspace-gap);
     align-items: start;
 }
 
 @media (max-width: 860px) {
+
+    .view-grid,
     .edit-grid {
         grid-template-columns: minmax(0, 1fr);
     }
@@ -262,7 +283,7 @@ tr.selected {
 .radar-svg {
     display: block;
     width: 100%;
-    max-width: 560px;
+    max-width: var(--radar-max-size);
     height: auto;
     margin: 0 auto;
 }
@@ -341,19 +362,6 @@ tr.selected {
 .mode-toggle button.active {
     background: var(--accent-soft);
     color: var(--text);
-}
-
-.view-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 360px);
-    gap: 1.5rem;
-    align-items: start;
-}
-
-@media (max-width: 860px) {
-    .view-grid {
-        grid-template-columns: minmax(0, 1fr);
-    }
 }
 
 .panel {

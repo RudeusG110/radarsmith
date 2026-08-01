@@ -245,7 +245,7 @@ export function RadarWorkspace() {
     );
 
     return (
-        <main>
+        <main className="workspace-main">
             <h1>{radar.name}</h1>
             <p>{radar.purpose ?? "No purpose set"}</p>
             <dl>
