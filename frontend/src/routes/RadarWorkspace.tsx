@@ -240,14 +240,14 @@ export function RadarWorkspace() {
         />
     );
     const blipsPanel = (
-        <div className="panel">
+        <div className="panel blips-panel">
             <div className="panel-title">
                 Blips
                 <button type="button" className="btn primary" onClick={() => setOpenDialog({ kind: "add" })}>
                     + Add Blip
                 </button>
             </div>
-            {tableView}
+            <div className="panel-body">{tableView}</div>
         </div>
     );
 
@@ -297,10 +297,15 @@ export function RadarWorkspace() {
                             {blipsPanel}
                         </div>
                     )}
-                    <div className="panel side-panel">
+                    <div className="panel side-panel edit-details-panel">
                         <div className="panel-title">Details</div>
                         <div className="panel-body">
-                            <BlipDetailPanel blip={selectedBlip} quadrantLabel={selectedQuadrantLabel} ringLabel={selectedRingLabel} />
+                            <BlipDetailPanel
+                                blip={selectedBlip}
+                                quadrantLabel={selectedQuadrantLabel}
+                                ringLabel={selectedRingLabel}
+                                showDescription={false}
+                            />
                         </div>
                     </div>
                 </>

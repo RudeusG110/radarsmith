@@ -31,7 +31,12 @@
     /* Wider than --workspace-side-col: Edit's 4-column blip table needs more room than View's text panel. */
     --workspace-table-col: minmax(0, 640px);
     --workspace-gap: 1.5rem;
-    --radar-max-size: 900px;
+    /* Capped by width (900px) and by viewport height so the whole radar+glossary panel fits
+       without page scroll on shorter screens; tuned empirically, see restyle-decisions.md. */
+    --radar-max-size: min(900px, calc(100vh - 365px));
+    /* Radar panel's non-SVG chrome (panel-title + radar-wrap padding + glossary rows), so
+       companion panels (side-panel/blips-panel/edit-details-panel) can match its real height. */
+    --radar-panel-height: calc(var(--radar-max-size) + 170px);
     /* Wider than the default `main` reading width — the workspace is a visual/graphical layout, not text. */
     --workspace-max-width: 96rem;
 }
@@ -62,6 +67,16 @@ main {
 
 .workspace-main {
     max-width: var(--workspace-max-width);
+}
+
+/* Trims the browser's large default heading/paragraph margins so the radar has more vertical
+   room to work with — see the viewport-height budget behind --radar-max-size. */
+.workspace-main>h1 {
+    margin: 0 0 0.4rem;
+}
+
+.workspace-main>p {
+    margin: 0 0 1rem;
 }
 
 button {
@@ -225,12 +240,14 @@ td {
 .view-grid {
     grid-template-columns: var(--workspace-radar-col) var(--workspace-side-col);
     /* Stretches the side panel to the radar panel's actual height so it stays put and scrolls
-       internally instead of resizing with content (edit-grid keeps the default `start`). */
+       internally instead of resizing with content. */
     align-items: stretch;
 }
 
 .edit-grid {
     grid-template-columns: var(--workspace-radar-col) var(--workspace-table-col);
+    /* Same reasoning as .view-grid, for the blips table panel. */
+    align-items: stretch;
 }
 
 @media (max-width: 860px) {
@@ -240,8 +257,13 @@ td {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .side-panel {
+    .side-panel,
+    .blips-panel {
         max-height: none;
+    }
+
+    .edit-details-panel {
+        height: auto;
     }
 }
 
@@ -455,17 +477,28 @@ tr.selected {
     color: var(--muted);
 }
 
-/* Backstop only: `align-items: stretch` on .view-grid normally makes this match the radar
-   panel's real height. This cap just stops an unusually long description from inflating the
-   grid row (and the radar panel with it) past the radar's own max size. */
-.side-panel {
-    max-height: calc(var(--radar-max-size) + 82px);
+/* Backstop only: `align-items: stretch` on .view-grid/.edit-grid normally makes these match the
+   radar panel's real height. This cap just stops unusually long content from inflating the grid
+   row (and the radar panel with it) past the radar's own max size. */
+.side-panel,
+.blips-panel {
+    max-height: var(--radar-panel-height);
 }
 
-.side-panel .panel-body {
+/* Not a grid sibling of the radar panel (it renders full-width below it in Edit mode), so it
+   can't rely on `align-items: stretch` — a real fixed height keeps it matching regardless of
+   content length. */
+.edit-details-panel {
+    height: var(--radar-panel-height);
+}
+
+.panel-body {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+}
+
+.side-panel .panel-body {
     padding: 1rem;
     font-size: 14px;
 }
