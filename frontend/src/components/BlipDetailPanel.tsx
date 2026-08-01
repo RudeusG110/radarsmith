@@ -16,7 +16,7 @@ export function BlipDetailPanel({ blip, quadrantLabel, ringLabel }: BlipDetailPa
     return (
         <div>
             <h2>{blip.name}</h2>
-            <p>
+            <p className="blip-meta">
                 {quadrantLabel}, {ringLabel}
             </p>
             <p>{linkify(blip.description)}</p>

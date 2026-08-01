@@ -29,7 +29,7 @@
     --workspace-radar-col: minmax(0, 1fr);
     --workspace-side-col: minmax(0, 420px);
     /* Wider than --workspace-side-col: Edit's 4-column blip table needs more room than View's text panel. */
-    --workspace-table-col: minmax(0, 560px);
+    --workspace-table-col: minmax(0, 640px);
     --workspace-gap: 1.5rem;
     --radar-max-size: 900px;
     /* Wider than the default `main` reading width — the workspace is a visual/graphical layout, not text. */
@@ -268,8 +268,10 @@ td {
     vertical-align: bottom;
 }
 
-.blip-table td:last-child {
-    white-space: nowrap;
+.row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
 .panel .blip-table th {
@@ -400,6 +402,9 @@ tr.selected {
 .side-panel .panel-body {
     padding: 1rem;
     font-size: 14px;
+    /* Caps the panel to roughly one viewport instead of growing the whole page for long text. */
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
 }
 
 .side-panel .empty {
@@ -425,6 +430,15 @@ tr.selected {
 .side-panel td {
     padding: 0.4rem 0.25rem;
     border-bottom: 1px solid var(--border);
+}
+
+.blip-meta {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin: 0.25rem 0 0.75rem;
 }
 
 .lib-head {

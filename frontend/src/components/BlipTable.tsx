@@ -60,12 +60,14 @@ export function BlipTable({
                                 <td>{titleCase(quadrantById.get(blip.quadrant_id)?.name ?? "Unknown")}</td>
                                 <td>{titleCase(ringById.get(blip.ring_id)?.name ?? "Unknown")}</td>
                                 <td>
-                                    <button type="button" className="btn" onClick={() => onEdit(blip)}>
-                                        Edit<span className="visually-hidden"> {blip.name}</span>
-                                    </button>
-                                    <button type="button" className="btn danger" onClick={() => onDelete(blip)}>
-                                        Delete<span className="visually-hidden"> {blip.name}</span>
-                                    </button>
+                                    <div className="row-actions">
+                                        <button type="button" className="btn" onClick={() => onEdit(blip)}>
+                                            Edit<span className="visually-hidden"> {blip.name}</span>
+                                        </button>
+                                        <button type="button" className="btn danger" onClick={() => onDelete(blip)}>
+                                            Delete<span className="visually-hidden"> {blip.name}</span>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         );
