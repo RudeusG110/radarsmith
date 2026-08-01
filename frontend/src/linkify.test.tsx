@@ -5,13 +5,13 @@ import { linkify } from "./linkify";
 
 describe("linkify", () => {
     it("turns a bare URL into a link", () => {
-        render(<p>{linkify("See https://example.com/docs for details.")}</p>);
+        const { container } = render(<p>{linkify("See https://example.com/docs for details.")}</p>);
 
         const link = screen.getByRole("link", { name: "https://example.com/docs" });
         expect(link).toHaveAttribute("href", "https://example.com/docs");
         expect(link).toHaveAttribute("target", "_blank");
         expect(link).toHaveAttribute("rel", "noopener noreferrer");
-        expect(screen.getByText("See", { exact: false })).toBeInTheDocument();
+        expect(container.textContent).toBe("See https://example.com/docs for details.");
     });
 
     it("linkifies multiple URLs independently", () => {
@@ -33,6 +33,6 @@ describe("linkify", () => {
 
         expect(container.querySelector("script")).not.toBeInTheDocument();
         expect(container.querySelector("b")).not.toBeInTheDocument();
-        expect(screen.getByText("<script>alert(1)</script> and <b>bold</b>", { exact: false })).toBeInTheDocument();
+        expect(screen.getByText("<script>alert(1)</script> and <b>bold</b>")).toBeInTheDocument();
     });
 });
