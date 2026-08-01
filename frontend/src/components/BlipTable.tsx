@@ -38,7 +38,6 @@ export function BlipTable({
                         <th scope="col">Name</th>
                         <th scope="col">Quadrant</th>
                         <th scope="col">Ring</th>
-                        <th scope="col">Description</th>
                         <th scope="col">Actions</th>
                     </tr>
                 </thead>
@@ -60,12 +59,6 @@ export function BlipTable({
                                 </td>
                                 <td>{titleCase(quadrantById.get(blip.quadrant_id)?.name ?? "Unknown")}</td>
                                 <td>{titleCase(ringById.get(blip.ring_id)?.name ?? "Unknown")}</td>
-                                <td>
-                                    <details>
-                                        <summary>Description</summary>
-                                        <p>{blip.description}</p>
-                                    </details>
-                                </td>
                                 <td>
                                     <button type="button" className="btn" onClick={() => onEdit(blip)}>
                                         Edit<span className="visually-hidden"> {blip.name}</span>

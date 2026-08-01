@@ -27,7 +27,7 @@ describe("BlipTable", () => {
         expect(screen.getByText("No blips yet.")).toBeInTheDocument();
     });
 
-    it("renders a row per blip with title-cased quadrant/ring and the description behind details", () => {
+    it("renders a row per blip with title-cased quadrant and ring", () => {
         const blip = makeBlip({ id: "b1", name: "Service Mesh", description: "A mesh.", quadrant_id: "q1", ring_id: "ring1" });
         render(
             <BlipTable
@@ -45,9 +45,6 @@ describe("BlipTable", () => {
         expect(screen.getByRole("button", { name: "Service Mesh" })).toBeInTheDocument();
         expect(screen.getByRole("cell", { name: "Techniques" })).toBeInTheDocument();
         expect(screen.getByRole("cell", { name: "Adopt" })).toBeInTheDocument();
-        expect(screen.getByRole("group")).not.toHaveAttribute("open");
-        fireEvent.click(screen.getByRole("group").querySelector("summary")!);
-        expect(screen.getByText("A mesh.")).toBeInTheDocument();
     });
 
     it("calls onSelect with the blip's id when its name button is activated, regardless of current selection", () => {

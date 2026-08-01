@@ -55,6 +55,8 @@ export interface SectorGeometry {
     labelPosition: Point;
     boundaryStart: Point;
     boundaryEnd: Point;
+    /** SVG path `d` data for the full wedge area, for a clickable quadrant hit-region. */
+    hitPath: string;
 }
 
 export interface MarkerGeometry {
@@ -113,6 +115,20 @@ function byPositionAscending(a: { position: number }, b: { position: number }): 
     return a.position - b.position;
 }
 
+/** A single sector spanning the full circle has coincident endpoints, so it needs two arcs. */
+function buildWedgePath(center: Point, startAngle: number, endAngle: number, radius: number): string {
+    const span = endAngle - startAngle;
+    if (span >= 360 - 1e-9) {
+        const right = toCartesian(center, startAngle, radius);
+        const left = toCartesian(center, startAngle + 180, radius);
+        return `M ${center.x} ${center.y} L ${right.x} ${right.y} A ${radius} ${radius} 0 1 1 ${left.x} ${left.y} A ${radius} ${radius} 0 1 1 ${right.x} ${right.y} Z`;
+    }
+    const start = toCartesian(center, startAngle, radius);
+    const end = toCartesian(center, endAngle, radius);
+    const largeArcFlag = span > 180 ? 1 : 0;
+    return `M ${center.x} ${center.y} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${end.x} ${end.y} Z`;
+}
+
 function buildRings(rings: RingInput[], center: Point, maxRadius: number): RingGeometry[] {
     const ordered = [...rings].sort(byPositionAscending);
     const count = ordered.length;
@@ -146,6 +162,7 @@ function buildSectors(quadrants: SectorInput[], center: Point, maxRadius: number
             labelPosition: toCartesian(center, midAngle, maxRadius * 1.08),
             boundaryStart: center,
             boundaryEnd: toCartesian(center, startAngle, maxRadius),
+            hitPath: buildWedgePath(center, startAngle, endAngle, maxRadius),
         };
     });
 }

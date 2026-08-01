@@ -87,6 +87,27 @@ describe("computeRadarGeometry", () => {
         expect(geometry.markers).toHaveLength(0);
     });
 
+    it("gives every sector a hit-area wedge path anchored at the center", () => {
+        const geometry = computeRadarGeometry(
+            { quadrants: makeSectors(4), rings: makeRings(4), blips: [] },
+            { size: 400 },
+        );
+        for (const sector of geometry.sectors) {
+            expect(sector.hitPath.startsWith(`M ${geometry.center.x} ${geometry.center.y}`)).toBe(true);
+            expect(sector.hitPath.endsWith("Z")).toBe(true);
+        }
+    });
+
+    it("closes the wedge path with a full-circle arc for a single sector", () => {
+        const geometry = computeRadarGeometry(
+            { quadrants: makeSectors(1), rings: makeRings(1), blips: [] },
+            { size: 400 },
+        );
+        expect(geometry.sectors).toHaveLength(1);
+        // Two arc commands ("A") are needed since a single 360-degree arc is degenerate.
+        expect(geometry.sectors[0].hitPath.match(/A/g)).toHaveLength(2);
+    });
+
     it("skips a blip whose quadrant or ring id is unknown", () => {
         const geometry = computeRadarGeometry(
             {
@@ -176,6 +197,17 @@ describe("computeRadarGeometry (property-based)", () => {
                     const radius = distanceFromCenter(geometry, marker);
                     expect(radius).toBeGreaterThanOrEqual(ring.innerRadius - 1e-9);
                     expect(radius).toBeLessThanOrEqual(ring.outerRadius + 1e-9);
+                }
+            }),
+        );
+    });
+
+    it("always anchors every sector's wedge path at the shared center", () => {
+        fc.assert(
+            fc.property(radarInputArb, sizeArb, (input, size) => {
+                const geometry = computeRadarGeometry(input, { size });
+                for (const sector of geometry.sectors) {
+                    expect(sector.hitPath.startsWith(`M ${geometry.center.x} ${geometry.center.y}`)).toBe(true);
                 }
             }),
         );

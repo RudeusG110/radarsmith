@@ -18,13 +18,15 @@ export interface RadarSvgProps {
     onSelect: (id: string) => void;
     /** Lets a parent move DOM focus onto a marker, e.g. when its row is selected. */
     markerRef?: (blipId: string, element: SVGGElement | null) => void;
+    /** Omit to keep quadrant sectors non-interactive, e.g. in Edit mode. */
+    onSelectQuadrant?: (quadrantId: string) => void;
 }
 
 /** Fixed square viewBox size; geometry scales every distance as a fraction of this. */
 const SIZE = 600;
 const MARKER_RADIUS = 8;
 
-export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSelect, markerRef }: RadarSvgProps) {
+export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSelect, markerRef, onSelectQuadrant }: RadarSvgProps) {
     const quadrantById = indexById(quadrants);
     const ringById = indexById(rings);
     const blipById = indexById(blips);
@@ -41,6 +43,13 @@ export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSel
         if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
             onSelect(blipId);
+        }
+    }
+
+    function handleSectorKeyDown(event: React.KeyboardEvent<SVGPathElement>, quadrantId: string) {
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onSelectQuadrant?.(quadrantId);
         }
     }
 
@@ -72,6 +81,16 @@ export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSel
                 const quadrantLabel = titleCase(quadrantById.get(sector.quadrantId)?.name ?? "");
                 return (
                     <g key={sector.quadrantId} role="graphics-object group" aria-label={quadrantLabel}>
+                        {onSelectQuadrant && (
+                            <path
+                                className="quad-hit"
+                                d={sector.hitPath}
+                                fill="transparent"
+                                tabIndex={0}
+                                onClick={() => onSelectQuadrant(sector.quadrantId)}
+                                onKeyDown={(event) => handleSectorKeyDown(event, sector.quadrantId)}
+                            />
+                        )}
                         <line
                             x1={sector.boundaryStart.x}
                             y1={sector.boundaryStart.y}

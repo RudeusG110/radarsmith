@@ -144,4 +144,41 @@ describe("RadarSvg", () => {
 
         expect(screen.getAllByRole("graphics-symbol")).toHaveLength(denseBlips.length);
     });
+
+    it("does not render a quadrant hit-area when onSelectQuadrant is omitted", () => {
+        const { container } = render(
+            <RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={[]} selectedId={null} onSelect={vi.fn()} />,
+        );
+
+        expect(container.querySelectorAll(".quad-hit")).toHaveLength(0);
+    });
+
+    it("calls onSelectQuadrant with the quadrant's id on click and on Enter/Space", () => {
+        const onSelectQuadrant = vi.fn();
+        render(
+            <RadarSvg
+                radarName="Engineering Radar"
+                quadrants={quadrants}
+                rings={rings}
+                blips={[]}
+                selectedId={null}
+                onSelect={vi.fn()}
+                onSelectQuadrant={onSelectQuadrant}
+            />,
+        );
+
+        const sector = screen.getByRole("graphics-object", { name: "Techniques" });
+        const hitArea = sector.querySelector(".quad-hit");
+        expect(hitArea).not.toBeNull();
+        if (hitArea === null) return;
+
+        fireEvent.click(hitArea);
+        expect(onSelectQuadrant).toHaveBeenCalledWith("q1");
+
+        fireEvent.keyDown(hitArea, { key: "Enter" });
+        expect(onSelectQuadrant).toHaveBeenCalledTimes(2);
+
+        fireEvent.keyDown(hitArea, { key: " " });
+        expect(onSelectQuadrant).toHaveBeenCalledTimes(3);
+    });
 });
