@@ -310,6 +310,8 @@ export interface components {
         };
         /** RadarSummaryOut */
         RadarSummaryOut: {
+            /** Blip Count */
+            blip_count: number;
             /**
              * Created At
              * Format: date-time

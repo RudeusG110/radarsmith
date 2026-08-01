@@ -43,6 +43,7 @@ class RadarSummaryOut(BaseModel):
     purpose: str | None = None
     created_at: datetime
     updated_at: datetime
+    blip_count: int
 
 
 class RadarDetailOut(BaseModel):

@@ -5,6 +5,22 @@ import { toErrorMessage } from "../api/errors";
 import { listRadars, type RadarSummary } from "../api/radars";
 import { NewRadarForm } from "../components/NewRadarForm";
 
+// Frontend-only heuristic: no `bundled`/`is_starter` flag exists in the schema or DB, but the
+// TICKET-010 preload migration gives the starter radar this stable, deterministic UUID.
+const STARTER_RADAR_ID = "2aa5eefc-c0d3-582e-bb73-5f14ef07953a";
+
+function sortWithStarterFirst(radars: RadarSummary[]): RadarSummary[] {
+    return [...radars].sort((a, b) => {
+        if (a.id === STARTER_RADAR_ID) {
+            return -1;
+        }
+        if (b.id === STARTER_RADAR_ID) {
+            return 1;
+        }
+        return 0;
+    });
+}
+
 export function RadarLibrary() {
     const [radars, setRadars] = useState<RadarSummary[] | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
@@ -59,12 +75,18 @@ export function RadarLibrary() {
             )}
             {loadError === null && radars !== null && radars.length > 0 && (
                 <ul className="radar-list">
-                    {radars.map((radar) => (
+                    {sortWithStarterFirst(radars).map((radar) => (
                         <li key={radar.id} className="radar-card">
-                            <div className="name">
-                                <Link to={`/radars/${radar.id}`}>{radar.name}</Link>
+                            <div className="info">
+                                <div className="name">
+                                    <Link to={`/radars/${radar.id}`}>{radar.name}</Link>
+                                    {radar.id === STARTER_RADAR_ID && <span className="tag">Start here</span>}
+                                </div>
+                                <p className="purpose">{radar.purpose ?? "No purpose set"}</p>
                             </div>
-                            <p className="purpose">{radar.purpose ?? "No purpose set"}</p>
+                            <div className="meta">
+                                {radar.blip_count} blip{radar.blip_count === 1 ? "" : "s"}
+                            </div>
                         </li>
                     ))}
                 </ul>

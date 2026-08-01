@@ -9,13 +9,18 @@ export function makeRadarSummary(overrides: Partial<RadarSummary> = {}): RadarSu
         purpose: null,
         created_at: "2026-01-01T00:00:00Z",
         updated_at: "2026-01-01T00:00:00Z",
+        blip_count: 0,
         ...overrides,
     };
 }
 
 export function makeRadarDetail(overrides: Partial<RadarDetail> = {}): RadarDetail {
     return {
-        ...makeRadarSummary(),
+        id: "r1",
+        name: "Mobile Radar",
+        purpose: null,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
         quadrants: [],
         rings: [],
         blips: [],

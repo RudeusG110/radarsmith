@@ -50,6 +50,7 @@ def test_get_radars(client: TestClient) -> None:
     assert len(body) == 2
     assert body[0]["name"] == "Radar 1"  # Most recent first
     assert body[1]["name"] == "Test radar"  # Seeded base-table radar
+    assert body[0]["blip_count"] == 0
     assert "quadrants" not in body[0]  # List items are lightweight
     assert "rings" not in body[0]
     assert "blips" not in body[0]

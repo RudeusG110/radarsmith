@@ -434,6 +434,9 @@ tr.selected {
 }
 
 .radar-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
     padding: 1rem 1.125rem;
     background: var(--panel);
     border: 1px solid var(--border);
@@ -445,12 +448,21 @@ tr.selected {
     border-color: var(--accent);
 }
 
+.radar-card .info {
+    flex: 1;
+    min-width: 0;
+}
+
 .radar-card .name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     font-weight: 700;
     font-size: 16px;
 }
 
 .radar-card .name a {
+    color: var(--text);
     text-decoration: none;
 }
 
@@ -463,6 +475,24 @@ tr.selected {
     color: var(--muted);
     font-size: 13px;
     margin: 0.25rem 0 0;
+}
+
+.radar-card .meta {
+    color: var(--muted);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.tag {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 1px solid #34507d;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
 }
 
 .empty-state {
