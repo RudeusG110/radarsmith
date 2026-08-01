@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 
 import { ApiError, toErrorMessage } from "../api/errors";
 import { getRadar, type Blip, type RadarDetail } from "../api/radars";
@@ -9,6 +9,7 @@ import { BlipTable } from "../components/BlipTable";
 import { DeleteBlipDialog } from "../components/DeleteBlipDialog";
 import { EditBlipDrawer } from "../components/EditBlipDrawer";
 import { RadarSvg } from "../components/RadarSvg";
+import { RadarViewPanel, type RadarViewSelection } from "../components/RadarViewPanel";
 import { Tabs, type TabItem } from "../components/Tabs";
 import { indexById } from "../collections";
 import { titleCase } from "../format";
@@ -16,6 +17,8 @@ import { useMediaQuery } from "../useMediaQuery";
 
 type OpenDialog = { kind: "add" } | { kind: "edit"; blip: Blip } | { kind: "delete"; blip: Blip } | null;
 type WorkspaceTab = "radar" | "blips";
+type WorkspaceMode = "view" | "edit";
+type ViewSelectionState = { kind: "blip"; blipId: string } | { kind: "quadrant"; quadrantId: string } | null;
 
 const NARROW_QUERY = "(max-width: 860px)";
 const WORKSPACE_TABS: TabItem[] = [
@@ -25,12 +28,15 @@ const WORKSPACE_TABS: TabItem[] = [
 
 export function RadarWorkspace() {
     const { radarId } = useParams();
+    const location = useLocation();
     const [radar, setRadar] = useState<RadarDetail | null>(null);
     const [notFound, setNotFound] = useState(false);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [openDialog, setOpenDialog] = useState<OpenDialog>(null);
     const [selectedBlipId, setSelectedBlipId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<WorkspaceTab>("radar");
+    const [mode, setMode] = useState<WorkspaceMode>("view");
+    const [viewSelection, setViewSelection] = useState<ViewSelectionState>(null);
     const isNarrow = useMediaQuery(NARROW_QUERY);
     const markerRefs = useRef(new Map<string, SVGGElement>());
     const rowRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -56,6 +62,13 @@ export function RadarWorkspace() {
     useEffect(() => {
         load();
     }, [load]);
+
+    /** Just-created radars open in Edit mode; opening an existing radar defaults to View. */
+    useEffect(() => {
+        const justCreated = (location.state as { justCreated?: boolean } | null)?.justCreated ?? false;
+        setMode(justCreated ? "edit" : "view");
+        setViewSelection(null);
+    }, [radarId, location.state]);
 
     if (notFound) {
         return (
@@ -92,6 +105,36 @@ export function RadarWorkspace() {
         selectedBlip === null ? "" : titleCase(quadrantById.get(selectedBlip.quadrant_id)?.name ?? "Unknown");
     const selectedRingLabel = selectedBlip === null ? "" : titleCase(ringById.get(selectedBlip.ring_id)?.name ?? "Unknown");
 
+    const orderedRings = [...radar.rings].sort((a, b) => a.position - b.position);
+    const viewPanelSelection: RadarViewSelection =
+        viewSelection === null
+            ? null
+            : viewSelection.kind === "blip"
+                ? (() => {
+                    const blip = radar.blips.find((candidate) => candidate.id === viewSelection.blipId);
+                    if (blip === undefined) {
+                        return null;
+                    }
+                    return {
+                        kind: "blip",
+                        blip,
+                        quadrantLabel: titleCase(quadrantById.get(blip.quadrant_id)?.name ?? "Unknown"),
+                        ringLabel: titleCase(ringById.get(blip.ring_id)?.name ?? "Unknown"),
+                    };
+                })()
+                : {
+                    kind: "quadrant",
+                    quadrantLabel: titleCase(quadrantById.get(viewSelection.quadrantId)?.name ?? "Unknown"),
+                    groups: orderedRings
+                        .map((ring) => ({
+                            ringLabel: titleCase(ring.name),
+                            blips: radar.blips
+                                .filter((blip) => blip.quadrant_id === viewSelection.quadrantId && blip.ring_id === ring.id)
+                                .sort((a, b) => a.name.localeCompare(b.name)),
+                        }))
+                        .filter((group) => group.blips.length > 0),
+                };
+
     /** Selecting from one surface also moves focus onto the matching element in the other. */
     function handleSelect(id: string, source: "marker" | "row") {
         const next = selectedBlipId === id ? null : id;
@@ -101,6 +144,19 @@ export function RadarWorkspace() {
         }
         const target = source === "row" ? markerRefs.current.get(id) : rowRefs.current.get(id);
         target?.focus();
+    }
+
+    function handleModeChange(next: WorkspaceMode) {
+        setMode(next);
+        setOpenDialog(null);
+    }
+
+    function handleSelectViewBlip(id: string) {
+        setViewSelection((current) => (current?.kind === "blip" && current.blipId === id ? null : { kind: "blip", blipId: id }));
+    }
+
+    function handleSelectViewQuadrant(id: string) {
+        setViewSelection((current) => (current?.kind === "quadrant" && current.quadrantId === id ? null : { kind: "quadrant", quadrantId: id }));
     }
 
     function registerMarkerRef(blipId: string, element: SVGGElement | null) {
@@ -137,7 +193,7 @@ export function RadarWorkspace() {
         setOpenDialog(null);
     }
 
-    const radarView = (
+    const editRadarView = (
         <RadarSvg
             radarName={radar.name}
             quadrants={radar.quadrants}
@@ -172,31 +228,66 @@ export function RadarWorkspace() {
                 <dt>Rings</dt>
                 <dd>{radar.rings.map((ring) => titleCase(ring.name)).join(", ")}</dd>
             </dl>
-            <button type="button" className="btn primary" onClick={() => setOpenDialog({ kind: "add" })}>
-                + Add Blip
-            </button>
-            {isNarrow ? (
-                <>
-                    <Tabs
-                        label="Workspace view"
-                        tabs={WORKSPACE_TABS}
-                        activeId={activeTab}
-                        onChange={(id) => setActiveTab(id as WorkspaceTab)}
+            <div className="mode-toggle" role="group" aria-label="Workspace mode">
+                <button
+                    type="button"
+                    className={mode === "view" ? "active" : undefined}
+                    aria-pressed={mode === "view"}
+                    onClick={() => handleModeChange("view")}
+                >
+                    View
+                </button>
+                <button
+                    type="button"
+                    className={mode === "edit" ? "active" : undefined}
+                    aria-pressed={mode === "edit"}
+                    onClick={() => handleModeChange("edit")}
+                >
+                    Edit
+                </button>
+            </div>
+            {mode === "view" ? (
+                <div className="view-grid">
+                    <RadarSvg
+                        radarName={radar.name}
+                        quadrants={radar.quadrants}
+                        rings={radar.rings}
+                        blips={radar.blips}
+                        selectedId={viewSelection?.kind === "blip" ? viewSelection.blipId : null}
+                        onSelect={handleSelectViewBlip}
+                        onSelectQuadrant={handleSelectViewQuadrant}
                     />
-                    <div role="tabpanel" id="radar-panel" aria-labelledby="radar-tab" hidden={activeTab !== "radar"}>
-                        {radarView}
-                    </div>
-                    <div role="tabpanel" id="blips-panel" aria-labelledby="blips-tab" hidden={activeTab !== "blips"}>
-                        {tableView}
-                    </div>
-                </>
-            ) : (
-                <div className="workspace-grid">
-                    {radarView}
-                    {tableView}
+                    <RadarViewPanel selection={viewPanelSelection} onSelectBlip={handleSelectViewBlip} />
                 </div>
+            ) : (
+                <>
+                    <button type="button" className="btn primary" onClick={() => setOpenDialog({ kind: "add" })}>
+                        + Add Blip
+                    </button>
+                    {isNarrow ? (
+                        <>
+                            <Tabs
+                                label="Workspace view"
+                                tabs={WORKSPACE_TABS}
+                                activeId={activeTab}
+                                onChange={(id) => setActiveTab(id as WorkspaceTab)}
+                            />
+                            <div role="tabpanel" id="radar-panel" aria-labelledby="radar-tab" hidden={activeTab !== "radar"}>
+                                {editRadarView}
+                            </div>
+                            <div role="tabpanel" id="blips-panel" aria-labelledby="blips-tab" hidden={activeTab !== "blips"}>
+                                {tableView}
+                            </div>
+                        </>
+                    ) : (
+                        <div className="workspace-grid">
+                            {editRadarView}
+                            {tableView}
+                        </div>
+                    )}
+                    <BlipDetailPanel blip={selectedBlip} quadrantLabel={selectedQuadrantLabel} ringLabel={selectedRingLabel} />
+                </>
             )}
-            <BlipDetailPanel blip={selectedBlip} quadrantLabel={selectedQuadrantLabel} ringLabel={selectedRingLabel} />
             {openDialog?.kind === "add" && (
                 <AddBlipDrawer radarId={radar.id} quadrants={radar.quadrants} rings={radar.rings} onCreated={handleCreated} onCancel={() => setOpenDialog(null)} />
             )}

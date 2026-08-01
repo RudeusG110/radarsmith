@@ -32,7 +32,7 @@ export function RadarLibrary() {
             </button>
             {showCreateForm && (
                 <NewRadarForm
-                    onCreated={(radar) => navigate(`/radars/${radar.id}`)}
+                    onCreated={(radar) => navigate(`/radars/${radar.id}`, { state: { justCreated: true } })}
                     onCancel={() => setShowCreateForm(false)}
                 />
             )}
