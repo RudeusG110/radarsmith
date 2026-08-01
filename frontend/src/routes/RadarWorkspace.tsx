@@ -4,7 +4,6 @@ import { Link, useLocation, useParams } from "react-router-dom";
 import { ApiError, toErrorMessage } from "../api/errors";
 import { getRadar, type Blip, type RadarDetail } from "../api/radars";
 import { AddBlipDrawer } from "../components/AddBlipDrawer";
-import { BlipDetailPanel } from "../components/BlipDetailPanel";
 import { BlipTable } from "../components/BlipTable";
 import { DeleteBlipDialog } from "../components/DeleteBlipDialog";
 import { EditBlipDrawer } from "../components/EditBlipDrawer";
@@ -121,10 +120,6 @@ export function RadarWorkspace() {
 
     const quadrantById = indexById(radar.quadrants);
     const ringById = indexById(radar.rings);
-    const selectedBlip = radar.blips.find((blip) => blip.id === selectedBlipId) ?? null;
-    const selectedQuadrantLabel =
-        selectedBlip === null ? "" : titleCase(quadrantById.get(selectedBlip.quadrant_id)?.name ?? "Unknown");
-    const selectedRingLabel = selectedBlip === null ? "" : titleCase(ringById.get(selectedBlip.ring_id)?.name ?? "Unknown");
 
     const orderedRings = [...radar.rings].sort((a, b) => a.position - b.position);
     const viewPanelSelection: RadarViewSelection =
@@ -297,17 +292,6 @@ export function RadarWorkspace() {
                             {blipsPanel}
                         </div>
                     )}
-                    <div className="panel side-panel edit-details-panel">
-                        <div className="panel-title">Details</div>
-                        <div className="panel-body">
-                            <BlipDetailPanel
-                                blip={selectedBlip}
-                                quadrantLabel={selectedQuadrantLabel}
-                                ringLabel={selectedRingLabel}
-                                showDescription={false}
-                            />
-                        </div>
-                    </div>
                 </>
             )}
             {openDialog?.kind === "add" && (

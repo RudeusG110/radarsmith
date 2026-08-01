@@ -35,7 +35,7 @@
        without page scroll on shorter screens; tuned empirically, see restyle-decisions.md. */
     --radar-max-size: min(900px, calc(100vh - 365px));
     /* Radar panel's non-SVG chrome (panel-title + radar-wrap padding + glossary rows), so
-       companion panels (side-panel/blips-panel/edit-details-panel) can match its real height. */
+       companion panels (side-panel/blips-panel) can match its real height. */
     --radar-panel-height: calc(var(--radar-max-size) + 170px);
     /* Wider than the default `main` reading width — the workspace is a visual/graphical layout, not text. */
     --workspace-max-width: 96rem;
@@ -261,10 +261,6 @@ td {
     .blips-panel {
         max-height: none;
     }
-
-    .edit-details-panel {
-        height: auto;
-    }
 }
 
 .tab {
@@ -483,13 +479,6 @@ tr.selected {
 .side-panel,
 .blips-panel {
     max-height: var(--radar-panel-height);
-}
-
-/* Not a grid sibling of the radar panel (it renders full-width below it in Edit mode), so it
-   can't rely on `align-items: stretch` — a real fixed height keeps it matching regardless of
-   content length. */
-.edit-details-panel {
-    height: var(--radar-panel-height);
 }
 
 .panel-body {

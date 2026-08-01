@@ -176,19 +176,16 @@ describe("RadarWorkspace", () => {
         await screen.findByRole("cell", { name: "Service Mesh" });
         expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
         expect(screen.getByRole("graphics-symbol")).toBeInTheDocument();
-        expect(screen.getByText("Select a blip marker or row to see its details.")).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole("button", { name: "Service Mesh" }));
 
         expect(screen.getByRole("button", { name: "Service Mesh" })).toHaveAttribute("aria-pressed", "true");
         expect(screen.getByRole("graphics-symbol").querySelector("circle")).toHaveAttribute("stroke", "var(--accent)");
-        expect(screen.getByRole("heading", { name: "Service Mesh" })).toBeInTheDocument();
         expect(screen.getByRole("graphics-symbol")).toHaveFocus();
 
         fireEvent.click(screen.getByRole("graphics-symbol"));
 
         expect(screen.getByRole("button", { name: "Service Mesh" })).toHaveAttribute("aria-pressed", "false");
-        expect(screen.getByText("Select a blip marker or row to see its details.")).toBeInTheDocument();
     });
 
     it("selects and focuses a row when its unselected marker is clicked first", async () => {
@@ -206,7 +203,6 @@ describe("RadarWorkspace", () => {
 
         expect(screen.getByRole("button", { name: "Service Mesh" })).toHaveAttribute("aria-pressed", "true");
         expect(screen.getByRole("button", { name: "Service Mesh" })).toHaveFocus();
-        expect(screen.getByRole("heading", { name: "Service Mesh" })).toBeInTheDocument();
     });
 
     it("shows Radar/Blips tabs on narrow screens and preserves selection across tab switches", async () => {
@@ -228,7 +224,6 @@ describe("RadarWorkspace", () => {
 
         expect(screen.getByRole("tab", { name: "Blips" })).toHaveAttribute("aria-selected", "true");
         expect(screen.getByRole("button", { name: "Service Mesh" })).toHaveAttribute("aria-pressed", "true");
-        expect(screen.getByRole("heading", { name: "Service Mesh" })).toBeInTheDocument();
     });
 
     it("preserves selection when resizing from wide to narrow", async () => {
@@ -247,7 +242,7 @@ describe("RadarWorkspace", () => {
         act(() => media.setMatches(true));
 
         expect(await screen.findByRole("tablist", { name: "Workspace view" })).toBeInTheDocument();
-        expect(screen.getByRole("heading", { name: "Service Mesh" })).toBeInTheDocument();
+        expect(screen.getByRole("graphics-symbol").querySelector("circle")).toHaveAttribute("stroke", "var(--accent)");
     });
 
     it("defaults to View mode when opening an existing radar, with no edit affordances", async () => {
