@@ -4,11 +4,23 @@ import { Link, useParams } from "react-router-dom";
 import { ApiError, toErrorMessage } from "../api/errors";
 import { getRadar, type Blip, type RadarDetail } from "../api/radars";
 import { AddBlipDrawer } from "../components/AddBlipDrawer";
+import { BlipDetailPanel } from "../components/BlipDetailPanel";
+import { BlipTable } from "../components/BlipTable";
 import { DeleteBlipDialog } from "../components/DeleteBlipDialog";
 import { EditBlipDrawer } from "../components/EditBlipDrawer";
+import { RadarSvg } from "../components/RadarSvg";
+import { Tabs, type TabItem } from "../components/Tabs";
 import { titleCase } from "../format";
+import { useMediaQuery } from "../useMediaQuery";
 
 type OpenDialog = { kind: "add" } | { kind: "edit"; blip: Blip } | { kind: "delete"; blip: Blip } | null;
+type WorkspaceTab = "radar" | "blips";
+
+const NARROW_QUERY = "(max-width: 860px)";
+const WORKSPACE_TABS: TabItem[] = [
+    { id: "radar", label: "Radar" },
+    { id: "blips", label: "Blips" },
+];
 
 export function RadarWorkspace() {
     const { radarId } = useParams();
@@ -16,6 +28,9 @@ export function RadarWorkspace() {
     const [notFound, setNotFound] = useState(false);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [openDialog, setOpenDialog] = useState<OpenDialog>(null);
+    const [selectedBlipId, setSelectedBlipId] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<WorkspaceTab>("radar");
+    const isNarrow = useMediaQuery(NARROW_QUERY);
 
     const load = useCallback(() => {
         if (radarId === undefined) {
@@ -69,6 +84,14 @@ export function RadarWorkspace() {
 
     const quadrantById = new Map(radar.quadrants.map((quadrant) => [quadrant.id, quadrant]));
     const ringById = new Map(radar.rings.map((ring) => [ring.id, ring]));
+    const selectedBlip = radar.blips.find((blip) => blip.id === selectedBlipId) ?? null;
+    const selectedQuadrantLabel =
+        selectedBlip === null ? "" : titleCase(quadrantById.get(selectedBlip.quadrant_id)?.name ?? "Unknown");
+    const selectedRingLabel = selectedBlip === null ? "" : titleCase(ringById.get(selectedBlip.ring_id)?.name ?? "Unknown");
+
+    function handleSelect(id: string) {
+        setSelectedBlipId((current) => (current === id ? null : id));
+    }
 
     function handleCreated(blip: Blip) {
         setRadar((current) => (current === null ? current : { ...current, blips: [...current.blips, blip] }));
@@ -84,8 +107,32 @@ export function RadarWorkspace() {
 
     function handleDeleted(blipId: string) {
         setRadar((current) => (current === null ? current : { ...current, blips: current.blips.filter((blip) => blip.id !== blipId) }));
+        setSelectedBlipId((current) => (current === blipId ? null : current));
         setOpenDialog(null);
     }
+
+    const radarView = (
+        <RadarSvg
+            radarName={radar.name}
+            quadrants={radar.quadrants}
+            rings={radar.rings}
+            blips={radar.blips}
+            selectedId={selectedBlipId}
+            onSelect={handleSelect}
+        />
+    );
+    const tableView = (
+        <BlipTable
+            radarName={radar.name}
+            blips={radar.blips}
+            quadrantById={quadrantById}
+            ringById={ringById}
+            selectedId={selectedBlipId}
+            onSelect={handleSelect}
+            onEdit={(blip) => setOpenDialog({ kind: "edit", blip })}
+            onDelete={(blip) => setOpenDialog({ kind: "delete", blip })}
+        />
+    );
 
     return (
         <main>
@@ -100,47 +147,28 @@ export function RadarWorkspace() {
             <button type="button" onClick={() => setOpenDialog({ kind: "add" })}>
                 + Add Blip
             </button>
-            {radar.blips.length === 0 ? (
-                <p>No blips yet.</p>
+            {isNarrow ? (
+                <>
+                    <Tabs
+                        label="Workspace view"
+                        tabs={WORKSPACE_TABS}
+                        activeId={activeTab}
+                        onChange={(id) => setActiveTab(id as WorkspaceTab)}
+                    />
+                    <div role="tabpanel" id="radar-panel" aria-labelledby="radar-tab" hidden={activeTab !== "radar"}>
+                        {radarView}
+                    </div>
+                    <div role="tabpanel" id="blips-panel" aria-labelledby="blips-tab" hidden={activeTab !== "blips"}>
+                        {tableView}
+                    </div>
+                </>
             ) : (
-                <div className="table-scroll">
-                    <table>
-                        <caption className="visually-hidden">Blips for {radar.name}</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">Name</th>
-                                <th scope="col">Quadrant</th>
-                                <th scope="col">Ring</th>
-                                <th scope="col">Description</th>
-                                <th scope="col">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {radar.blips.map((blip) => (
-                                <tr key={blip.id}>
-                                    <td>{blip.name}</td>
-                                    <td>{titleCase(quadrantById.get(blip.quadrant_id)?.name ?? "Unknown")}</td>
-                                    <td>{titleCase(ringById.get(blip.ring_id)?.name ?? "Unknown")}</td>
-                                    <td>
-                                        <details>
-                                            <summary>Description</summary>
-                                            <p>{blip.description}</p>
-                                        </details>
-                                    </td>
-                                    <td>
-                                        <button type="button" onClick={() => setOpenDialog({ kind: "edit", blip })}>
-                                            Edit<span className="visually-hidden"> {blip.name}</span>
-                                        </button>
-                                        <button type="button" onClick={() => setOpenDialog({ kind: "delete", blip })}>
-                                            Delete<span className="visually-hidden"> {blip.name}</span>
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className="workspace-grid">
+                    {radarView}
+                    {tableView}
                 </div>
             )}
+            <BlipDetailPanel blip={selectedBlip} quadrantLabel={selectedQuadrantLabel} ringLabel={selectedRingLabel} />
             {openDialog?.kind === "add" && (
                 <AddBlipDrawer radarId={radar.id} quadrants={radar.quadrants} rings={radar.rings} onCreated={handleCreated} onCancel={() => setOpenDialog(null)} />
             )}

@@ -1,8 +1,8 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { makeBlip, makeQuadrant, makeRadarDetail, makeRing } from "../test/factories";
+import { makeBlip, makeQuadrant, makeRadarDetail, makeRing, stubMatchMedia } from "../test/factories";
 import { RadarWorkspace } from "./RadarWorkspace";
 
 function renderWorkspace(radarId = "r1") {
@@ -157,5 +157,71 @@ describe("RadarWorkspace", () => {
 
         await waitFor(() => expect(screen.queryByRole("cell", { name: "Service Mesh" })).not.toBeInTheDocument());
         expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it("shows radar and table together with no tabs on wide screens, and syncs selection both ways", async () => {
+        const quadrant = makeQuadrant({ id: "q1", name: "TECHNIQUES" });
+        const ring = makeRing({ id: "ring1", name: "ADOPT" });
+        const blip = makeBlip({ id: "b1", name: "Service Mesh", quadrant_id: "q1", ring_id: "ring1" });
+        const radar = makeRadarDetail({ quadrants: [quadrant], rings: [ring], blips: [blip] });
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(radar, { status: 200 })));
+        renderWorkspace();
+
+        await screen.findByRole("cell", { name: "Service Mesh" });
+        expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+        expect(screen.getByRole("graphics-symbol")).toBeInTheDocument();
+        expect(screen.getByText("Select a blip marker or row to see its details.")).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole("button", { name: "Service Mesh" }));
+
+        expect(screen.getByRole("button", { name: "Service Mesh" })).toHaveAttribute("aria-pressed", "true");
+        expect(screen.getByRole("graphics-symbol").querySelector("circle")).toHaveAttribute("fill", "currentColor");
+        expect(screen.getByRole("heading", { name: "Service Mesh" })).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole("graphics-symbol"));
+
+        expect(screen.getByRole("button", { name: "Service Mesh" })).toHaveAttribute("aria-pressed", "false");
+        expect(screen.getByText("Select a blip marker or row to see its details.")).toBeInTheDocument();
+    });
+
+    it("shows Radar/Blips tabs on narrow screens and preserves selection across tab switches", async () => {
+        stubMatchMedia(true);
+        const quadrant = makeQuadrant({ id: "q1", name: "TECHNIQUES" });
+        const ring = makeRing({ id: "ring1", name: "ADOPT" });
+        const blip = makeBlip({ id: "b1", name: "Service Mesh", quadrant_id: "q1", ring_id: "ring1" });
+        const radar = makeRadarDetail({ quadrants: [quadrant], rings: [ring], blips: [blip] });
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(radar, { status: 200 })));
+        renderWorkspace();
+
+        await screen.findByRole("tablist", { name: "Workspace view" });
+        expect(screen.getByRole("tab", { name: "Radar" })).toHaveAttribute("aria-selected", "true");
+        expect(screen.getByRole("graphics-symbol")).toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: "Service Mesh" })).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole("graphics-symbol"));
+        fireEvent.click(screen.getByRole("tab", { name: "Blips" }));
+
+        expect(screen.getByRole("tab", { name: "Blips" })).toHaveAttribute("aria-selected", "true");
+        expect(screen.getByRole("button", { name: "Service Mesh" })).toHaveAttribute("aria-pressed", "true");
+        expect(screen.getByRole("heading", { name: "Service Mesh" })).toBeInTheDocument();
+    });
+
+    it("preserves selection when resizing from wide to narrow", async () => {
+        const media = stubMatchMedia(false);
+        const quadrant = makeQuadrant({ id: "q1", name: "TECHNIQUES" });
+        const ring = makeRing({ id: "ring1", name: "ADOPT" });
+        const blip = makeBlip({ id: "b1", name: "Service Mesh", quadrant_id: "q1", ring_id: "ring1" });
+        const radar = makeRadarDetail({ quadrants: [quadrant], rings: [ring], blips: [blip] });
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(radar, { status: 200 })));
+        renderWorkspace();
+
+        await screen.findByRole("cell", { name: "Service Mesh" });
+        expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole("button", { name: "Service Mesh" }));
+
+        act(() => media.setMatches(true));
+
+        expect(await screen.findByRole("tablist", { name: "Workspace view" })).toBeInTheDocument();
+        expect(screen.getByRole("heading", { name: "Service Mesh" })).toBeInTheDocument();
     });
 });
