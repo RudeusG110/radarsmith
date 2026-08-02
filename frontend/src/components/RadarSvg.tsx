@@ -3,6 +3,7 @@ import { indexById } from "../collections";
 import { titleCase } from "../format";
 import {
     computeRadarGeometry,
+    BASE_MARKER_RADIUS,
     type BlipInput as GeometryBlipInput,
     type RingInput as GeometryRingInput,
     type SectorInput as GeometrySectorInput,
@@ -24,7 +25,6 @@ export interface RadarSvgProps {
 
 /** Fixed square viewBox size; geometry scales every distance as a fraction of this. */
 const SIZE = 600;
-const MARKER_RADIUS = 10;
 
 export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSelect, markerRef, onSelectQuadrant }: RadarSvgProps) {
     const quadrantById = indexById(quadrants);
@@ -131,7 +131,7 @@ export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSel
                         <circle
                             cx={marker.x}
                             cy={marker.y}
-                            r={MARKER_RADIUS}
+                            r={marker.markerRadius}
                             fill={color}
                             stroke={isSelected ? "var(--accent)" : "var(--bg)"}
                             strokeWidth={isSelected ? 2 : 1}
@@ -142,7 +142,10 @@ export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSel
                             textAnchor="middle"
                             dominantBaseline="middle"
                             className="marker-number"
-                            fill={ringTextColor(ringIndexById.get(marker.ringId) ?? 0, geometry.rings.length)}
+                            style={{
+                                fill: ringTextColor(ringIndexById.get(marker.ringId) ?? 0, geometry.rings.length),
+                                fontSize: Math.max(6, 9 * (marker.markerRadius / BASE_MARKER_RADIUS)),
+                            }}
                             aria-hidden="true"
                         >
                             {index + 1}

@@ -1,11 +1,17 @@
 /**
  * Pure radar geometry: rings, sectors, labels, and marker placement.
  *
- * Marker placement is a pure function of a blip's own id plus its sector/ring bounds — it
- * never inspects sibling blips, so a blip's position never changes when a sibling is added
- * or removed. Dense-sector overlap is reduced with a golden-angle ("sunflower") slot derived
- * from a hash of the blip's own id, which spreads points far more evenly than plain
- * independent jitter, with no iterative/physics-based collision resolution.
+ * Marker placement/size is a pure function of a blip's own id plus the full set of blips
+ * sharing its exact quadrant+ring bucket — it never inspects blips outside that bucket, so a
+ * blip only moves/resizes when a sibling is added to or removed from its own bucket, never from
+ * changes elsewhere on the radar. Each bucket is laid out with a golden-angle ("sunflower"/
+ * phyllotactic) arrangement ranked by the bucket's own blip ids (sorted, so it's independent of
+ * input array order) — the standard technique for evenly filling a disk with N points, which
+ * requires ranking within the *actual* bucket size to work (picking a slot via a per-blip hash
+ * across one large fixed range, as a prior version of this file did, is equivalent to
+ * independent random placement and does not avoid overlap). Marker radius also shrinks per
+ * bucket when its blip count would otherwise overflow the available annulus area. No
+ * iterative/physics-based collision resolution.
  */
 
 export interface SectorInput {
@@ -65,6 +71,8 @@ export interface MarkerGeometry {
     ringId: string;
     x: number;
     y: number;
+    /** Shrinks below BASE_MARKER_RADIUS when its quadrant+ring bucket is too dense to fit at full size. */
+    markerRadius: number;
 }
 
 export interface RadarGeometry {
@@ -82,15 +90,19 @@ const RADIUS_FRACTION = 0.78;
 /** Angle (degrees, counterclockwise from the positive x-axis) where the first sector starts. */
 const START_ANGLE_DEGREES = 90;
 
-/** Fixed slot count for the golden-angle spread — large relative to any realistic bucket size. */
-const SLOT_COUNT = 9973;
-
-/** Golden ratio conjugate: an irrational step that equidistributes slot indices around a turn. */
+/** Golden ratio conjugate: an irrational step that equidistributes ranks evenly around a turn. */
 const GOLDEN_RATIO_CONJUGATE = 0.6180339887498949;
 
 /** Keeps markers off ring/sector boundary lines. */
 const RADIAL_INSET_FRACTION = 0.12;
 const ANGULAR_INSET_FRACTION = 0.12;
+
+/** Marker circle radius at/below which a bucket is never crowded enough to need shrinking. */
+export const BASE_MARKER_RADIUS = 10;
+/** Never shrink a marker below this, so its number stays legible. */
+const MIN_MARKER_RADIUS = 5;
+/** Conservative fraction of a bucket's annulus area markers may occupy (sunflower packing isn't a tight hex-pack). */
+const PACKING_EFFICIENCY = 0.55;
 
 /**
  * Equal-width ring bands give the innermost ring far less area than the outer ones (area grows
@@ -98,17 +110,6 @@ const ANGULAR_INSET_FRACTION = 0.12;
  * Zalando tech-radar's fixed ring radii ([130, 220, 310, 400] — a ~1.44x first band).
  */
 const INNER_RING_WIDTH_BOOST = 1.44;
-
-/** Deterministic FNV-1a-style hash of a string, salted, mapped to [0, 1). */
-function hashUnitInterval(value: string, salt: string): number {
-    let hash = 2166136261;
-    const input = `${value}:${salt}`;
-    for (let i = 0; i < input.length; i++) {
-        hash ^= input.charCodeAt(i);
-        hash = Math.imul(hash, 16777619);
-    }
-    return (hash >>> 0) / 4294967296;
-}
 
 function toCartesian(center: Point, angleDegrees: number, radius: number): Point {
     const angleRadians = (angleDegrees * Math.PI) / 180;
@@ -178,34 +179,76 @@ function buildSectors(quadrants: SectorInput[], center: Point, maxRadius: number
     });
 }
 
+/** Bucket key grouping blips that share both a quadrant and a ring, since that's the area they compete for space within. */
+function bucketKey(quadrantId: string, ringId: string): string {
+    return `${quadrantId}::${ringId}`;
+}
+
 function buildMarkers(
     blips: BlipInput[],
     sectorsById: Map<string, SectorGeometry>,
     ringsById: Map<string, RingGeometry>,
     center: Point,
 ): MarkerGeometry[] {
+    const validBlips = blips.filter((blip) => sectorsById.has(blip.quadrantId) && ringsById.has(blip.ringId));
+
+    // Rank each blip within its own quadrant+ring bucket (sorted by id, so the rank is
+    // independent of input array order) — the sunflower formula below needs the bucket's
+    // *actual* size to evenly fill it; a slot picked from one shared, much larger range
+    // (a prior version of this function) doesn't spread points any better than random jitter.
+    const bucketIds = new Map<string, string[]>();
+    for (const blip of validBlips) {
+        const key = bucketKey(blip.quadrantId, blip.ringId);
+        const ids = bucketIds.get(key);
+        if (ids) {
+            ids.push(blip.id);
+        } else {
+            bucketIds.set(key, [blip.id]);
+        }
+    }
+    const rankById = new Map<string, number>();
+    for (const ids of bucketIds.values()) {
+        [...ids].sort().forEach((id, rank) => rankById.set(id, rank));
+    }
+
     const markers: MarkerGeometry[] = [];
-    for (const blip of blips) {
+    for (const blip of validBlips) {
         const sector = sectorsById.get(blip.quadrantId);
         const ring = ringsById.get(blip.ringId);
         if (!sector || !ring) {
             continue;
         }
 
-        const slot = Math.floor(hashUnitInterval(blip.id, "slot") * SLOT_COUNT);
-        const radialFraction = Math.sqrt((slot + 0.5) / SLOT_COUNT);
-        const angularFraction = (slot * GOLDEN_RATIO_CONJUGATE) % 1;
+        const count = bucketIds.get(bucketKey(blip.quadrantId, blip.ringId))?.length ?? 1;
+        const rank = rankById.get(blip.id) ?? 0;
+        const radialFraction = Math.sqrt((rank + 0.5) / count);
+        const angularFraction = (rank * GOLDEN_RATIO_CONJUGATE) % 1;
 
         const angularSpan = sector.endAngle - sector.startAngle;
         const angularInset = angularSpan * ANGULAR_INSET_FRACTION;
-        const angle = sector.startAngle + angularInset + angularFraction * (angularSpan - 2 * angularInset);
+        const usableAngularSpan = angularSpan - 2 * angularInset;
+        const angle = sector.startAngle + angularInset + angularFraction * usableAngularSpan;
 
         const radialSpan = ring.outerRadius - ring.innerRadius;
         const radialInset = radialSpan * RADIAL_INSET_FRACTION;
-        const radius = ring.innerRadius + radialInset + radialFraction * (radialSpan - 2 * radialInset);
+        const innerUsable = ring.innerRadius + radialInset;
+        const outerUsable = ring.outerRadius - radialInset;
+        const radius = innerUsable + radialFraction * (outerUsable - innerUsable);
+
+        const usableAngularSpanRadians = (usableAngularSpan * Math.PI) / 180;
+        const bucketArea = (usableAngularSpanRadians / 2) * (outerUsable ** 2 - innerUsable ** 2);
+        const packingRadius = Math.sqrt((bucketArea * PACKING_EFFICIENCY) / (count * Math.PI));
+        const markerRadius = Math.min(BASE_MARKER_RADIUS, Math.max(MIN_MARKER_RADIUS, packingRadius));
 
         const point = toCartesian(center, angle, radius);
-        markers.push({ blipId: blip.id, quadrantId: blip.quadrantId, ringId: blip.ringId, x: point.x, y: point.y });
+        markers.push({
+            blipId: blip.id,
+            quadrantId: blip.quadrantId,
+            ringId: blip.ringId,
+            x: point.x,
+            y: point.y,
+            markerRadius,
+        });
     }
     return markers;
 }

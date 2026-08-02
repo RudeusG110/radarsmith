@@ -149,6 +149,44 @@ describe("computeRadarGeometry", () => {
         const coordinates = geometry.markers.map((marker) => `${marker.x.toFixed(3)},${marker.y.toFixed(3)}`);
         expect(new Set(coordinates).size).toBe(coordinates.length);
     });
+
+    it("shrinks marker radius (never below a legible floor) as a bucket gets denser", () => {
+        const makeBlips = (count: number): BlipInput[] =>
+            Array.from({ length: count }, (_, index) => ({ id: `blip-${index}`, quadrantId: "q0", ringId: "r0" }));
+
+        const sparse = computeRadarGeometry({ quadrants: makeSectors(4), rings: makeRings(4), blips: makeBlips(1) }, { size: 500 });
+        const dense = computeRadarGeometry({ quadrants: makeSectors(4), rings: makeRings(4), blips: makeBlips(60) }, { size: 500 });
+
+        expect(sparse.markers[0].markerRadius).toBeCloseTo(10);
+        expect(dense.markers[0].markerRadius).toBeLessThan(sparse.markers[0].markerRadius);
+        expect(dense.markers[0].markerRadius).toBeGreaterThanOrEqual(5);
+    });
+
+    it("only changes a blip's marker when its OWN bucket's membership changes, not an unrelated bucket", () => {
+        const base: RadarGeometryInput = {
+            quadrants: makeSectors(4),
+            rings: makeRings(4),
+            blips: [
+                { id: "a1", quadrantId: "q0", ringId: "r0" },
+                { id: "b1", quadrantId: "q1", ringId: "r0" },
+            ],
+        };
+        const before = computeRadarGeometry(base, { size: 500 });
+
+        // Add a new sibling to b1's bucket (q1/r0); a1's bucket (q0/r0) is untouched.
+        const after = computeRadarGeometry(
+            { ...base, blips: [...base.blips, { id: "b2", quadrantId: "q1", ringId: "r0" }] },
+            { size: 500 },
+        );
+
+        const a1Before = before.markers.find((marker) => marker.blipId === "a1");
+        const a1After = after.markers.find((marker) => marker.blipId === "a1");
+        const b1Before = before.markers.find((marker) => marker.blipId === "b1");
+        const b1After = after.markers.find((marker) => marker.blipId === "b1");
+
+        expect(a1After).toEqual(a1Before);
+        expect(b1After).not.toEqual(b1Before);
+    });
 });
 
 describe("computeRadarGeometry (property-based)", () => {
@@ -269,18 +307,17 @@ describe("computeRadarGeometry (property-based)", () => {
         );
     });
 
-    it("leaves existing markers unmoved when a sibling is added or removed", () => {
+    it("leaves markers in other buckets unmoved when a sibling joins a bucket (only that bucket's own markers may shift)", () => {
         fc.assert(
             fc.property(radarInputArb, sizeArb, fc.uuid(), (input, size, extraBlipId) => {
                 fc.pre(input.quadrants.length > 0 && input.rings.length > 0);
                 fc.pre(!input.blips.some((blip) => blip.id === extraBlipId));
 
+                const targetQuadrantId = input.quadrants[0].id;
+                const targetRingId = input.rings[0].id;
+
                 const withoutSibling = computeRadarGeometry(input, { size });
-                const extraBlip: BlipInput = {
-                    id: extraBlipId,
-                    quadrantId: input.quadrants[0].id,
-                    ringId: input.rings[0].id,
-                };
+                const extraBlip: BlipInput = { id: extraBlipId, quadrantId: targetQuadrantId, ringId: targetRingId };
                 const withSibling = computeRadarGeometry(
                     { ...input, blips: [...input.blips, extraBlip] },
                     { size },
@@ -288,8 +325,16 @@ describe("computeRadarGeometry (property-based)", () => {
 
                 const withoutById = new Map(withoutSibling.markers.map((marker) => [marker.blipId, marker]));
                 const withById = new Map(withSibling.markers.map((marker) => [marker.blipId, marker]));
+                const blipsById = new Map(input.blips.map((blip) => [blip.id, blip]));
+
                 for (const [blipId, marker] of withoutById) {
-                    expect(withById.get(blipId)).toEqual(marker);
+                    const blip = blipsById.get(blipId);
+                    // Only the target bucket's own markers may shift (their rank/count/radius changed);
+                    // every other bucket is untouched by an addition it has nothing to do with.
+                    const sharesTargetBucket = blip?.quadrantId === targetQuadrantId && blip?.ringId === targetRingId;
+                    if (!sharesTargetBucket) {
+                        expect(withById.get(blipId)).toEqual(marker);
+                    }
                 }
             }),
         );

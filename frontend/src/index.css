@@ -409,13 +409,13 @@ tr.selected {
     transform: scale(1.3);
 }
 
-/* SVG `fill` doesn't inherit CSS `color`, so ring/quadrant labels need an explicit value. */
-.radar-svg text {
+/* SVG `fill` doesn't inherit CSS `color`, so ring labels need an explicit value; marker numbers
+   get their own per-ring contrast color inline instead (see RadarSvg.tsx). */
+.radar-svg text:not(.marker-number) {
     fill: var(--muted);
 }
 
 .marker-number {
-    font-size: 9px;
     font-weight: 700;
     pointer-events: none;
 }
