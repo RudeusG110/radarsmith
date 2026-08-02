@@ -92,6 +92,13 @@ const GOLDEN_RATIO_CONJUGATE = 0.6180339887498949;
 const RADIAL_INSET_FRACTION = 0.12;
 const ANGULAR_INSET_FRACTION = 0.12;
 
+/**
+ * Equal-width ring bands give the innermost ring far less area than the outer ones (area grows
+ * with radius squared), crowding it. Widen the innermost band instead, following the real
+ * Zalando tech-radar's fixed ring radii ([130, 220, 310, 400] — a ~1.44x first band).
+ */
+const INNER_RING_WIDTH_BOOST = 1.44;
+
 /** Deterministic FNV-1a-style hash of a string, salted, mapped to [0, 1). */
 function hashUnitInterval(value: string, salt: string): number {
     let hash = 2166136261;
@@ -132,9 +139,13 @@ function buildWedgePath(center: Point, startAngle: number, endAngle: number, rad
 function buildRings(rings: RingInput[], center: Point, maxRadius: number): RingGeometry[] {
     const ordered = [...rings].sort(byPositionAscending);
     const count = ordered.length;
+    const unit = maxRadius / (INNER_RING_WIDTH_BOOST + (count - 1));
+    let cursor = 0;
     return ordered.map((ring, index) => {
-        const innerRadius = (maxRadius * index) / count;
-        const outerRadius = (maxRadius * (index + 1)) / count;
+        const width = (index === 0 ? INNER_RING_WIDTH_BOOST : 1) * unit;
+        const innerRadius = cursor;
+        const outerRadius = cursor + width;
+        cursor = outerRadius;
         const labelRadius = (innerRadius + outerRadius) / 2;
         return {
             ringId: ring.id,

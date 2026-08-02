@@ -31,9 +31,9 @@
     /* Wider than --workspace-side-col: Edit's 4-column blip table needs more room than View's text panel. */
     --workspace-table-col: minmax(0, 640px);
     --workspace-gap: 1.5rem;
-    /* Capped by width (900px) and by viewport height so the whole radar+glossary panel fits
+    /* Capped by width (1100px) and by viewport height so the whole radar+glossary panel fits
        without page scroll on shorter screens; tuned empirically, see restyle-decisions.md. */
-    --radar-max-size: min(900px, calc(100vh - 365px));
+    --radar-max-size: min(1100px, calc(100vh - 300px));
     /* Radar panel's non-SVG chrome (panel-title + radar-wrap padding + glossary rows), so
        companion panels (side-panel/blips-panel) can match its real height. */
     --radar-panel-height: calc(var(--radar-max-size) + 170px);
@@ -417,7 +417,6 @@ tr.selected {
 .marker-number {
     font-size: 9px;
     font-weight: 700;
-    fill: #fff;
     pointer-events: none;
 }
 

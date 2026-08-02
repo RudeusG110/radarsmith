@@ -66,17 +66,29 @@ describe("computeRadarGeometry", () => {
         expect(geometry.markers).toHaveLength(1);
     });
 
-    it("supports many rings", () => {
+    it("supports many rings, with the innermost ring wider than the equal-width remainder", () => {
         const geometry = computeRadarGeometry(
             { quadrants: makeSectors(4), rings: makeRings(6), blips: [] },
             { size: 300 },
         );
         expect(geometry.rings).toHaveLength(6);
-        // Ring bands are contiguous and increasing.
+        // Ring bands are contiguous, increasing, and bounded by maxRadius.
+        expect(geometry.rings[0].innerRadius).toBeCloseTo(0);
         geometry.rings.forEach((ring, index) => {
-            expect(ring.innerRadius).toBeCloseTo((geometry.maxRadius * index) / 6);
-            expect(ring.outerRadius).toBeCloseTo((geometry.maxRadius * (index + 1)) / 6);
+            if (index > 0) {
+                expect(ring.innerRadius).toBeCloseTo(geometry.rings[index - 1].outerRadius);
+            }
+            expect(ring.outerRadius).toBeGreaterThan(ring.innerRadius);
         });
+        expect(geometry.rings[geometry.rings.length - 1].outerRadius).toBeCloseTo(geometry.maxRadius);
+        // The innermost ring is wider than each of the (equal-width) remaining rings.
+        const innerWidth = geometry.rings[0].outerRadius - geometry.rings[0].innerRadius;
+        const otherWidth = geometry.rings[1].outerRadius - geometry.rings[1].innerRadius;
+        expect(innerWidth).toBeGreaterThan(otherWidth);
+        for (let index = 2; index < geometry.rings.length; index++) {
+            const width = geometry.rings[index].outerRadius - geometry.rings[index].innerRadius;
+            expect(width).toBeCloseTo(otherWidth);
+        }
     });
 
     it("supports an empty sector (no blips)", () => {

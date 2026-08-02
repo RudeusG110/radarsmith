@@ -7,7 +7,7 @@ import {
     type RingInput as GeometryRingInput,
     type SectorInput as GeometrySectorInput,
 } from "../geometry/radarGeometry";
-import { ringColor } from "../ringColor";
+import { ringColor, ringTextColor } from "../ringColor";
 
 export interface RadarSvgProps {
     radarName: string;
@@ -77,7 +77,7 @@ export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSel
                     {titleCase(ringById.get(ring.ringId)?.name ?? "")}
                 </text>
             ))}
-            {/* Boundary lines drawn before labels (below, in paint order) so no line can cover a label. */}
+            {/* Quadrant boundary lines; quadrant names live only in RadarGlossary, never drawn on the plot. */}
             {geometry.sectors.map((sector) => {
                 const quadrantLabel = titleCase(quadrantById.get(sector.quadrantId)?.name ?? "");
                 return (
@@ -102,16 +102,6 @@ export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSel
                     </g>
                 );
             })}
-            {geometry.sectors.map((sector) => (
-                <text
-                    key={sector.quadrantId}
-                    x={sector.labelPosition.x}
-                    y={sector.labelPosition.y}
-                    textAnchor="middle"
-                >
-                    {titleCase(quadrantById.get(sector.quadrantId)?.name ?? "")}
-                </text>
-            ))}
             {blips.length === 0 && (
                 <text x={geometry.center.x} y={geometry.center.y} textAnchor="middle">
                     No blips yet
@@ -146,7 +136,15 @@ export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSel
                             stroke={isSelected ? "var(--accent)" : "var(--bg)"}
                             strokeWidth={isSelected ? 2 : 1}
                         />
-                        <text x={marker.x} y={marker.y} textAnchor="middle" dominantBaseline="middle" className="marker-number" aria-hidden="true">
+                        <text
+                            x={marker.x}
+                            y={marker.y}
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            className="marker-number"
+                            fill={ringTextColor(ringIndexById.get(marker.ringId) ?? 0, geometry.rings.length)}
+                            aria-hidden="true"
+                        >
                             {index + 1}
                         </text>
                     </g>
