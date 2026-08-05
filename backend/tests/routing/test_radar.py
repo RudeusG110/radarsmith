@@ -128,6 +128,40 @@ def test_get_radar_by_id_avoids_n_plus_one(client: TestClient, context: AppConte
     assert counter.count <= 6  # Constant query count; a per-blip N+1 would far exceed this
 
 
+def test_get_radars_avoids_n_plus_one(client: TestClient, context: AppContext) -> None:
+    radar_ids: list[UUID] = []
+    for index in range(3):
+        create_response = client.post("/api/v1/radars", json={"name": f"Dense radar {index}"})
+        radar_id = UUID(cast(str, create_response.json()["id"]))
+        radar_ids.append(radar_id)
+
+        quadrant = context.db.scalars(select(RadarQuadrant).where(RadarQuadrant.radar_id == radar_id)).first()
+        ring = context.db.scalars(select(RadarRing).where(RadarRing.radar_id == radar_id)).first()
+        assert quadrant is not None
+        assert ring is not None
+
+        context.db.add_all(
+            [
+                RadarBlip(radar_id=radar_id, quadrant_id=quadrant.id, ring_id=ring.id, name=f"Blip {blip_index}", description="A blip.")
+                for blip_index in range(10)
+            ]
+        )
+    context.db.commit()
+
+    engine = context.db.get_bind()
+    assert isinstance(engine, Engine)
+
+    with count_queries(engine) as counter:
+        response = client.get("/api/v1/radars")
+
+    assert response.status_code == HTTPStatus.OK
+    bodies = cast(list[dict[str, Any]], response.json())
+    for radar_id in radar_ids:
+        matching = next(body for body in bodies if body["id"] == str(radar_id))
+        assert matching["blip_count"] == 10
+    assert counter.count <= 3  # Constant query count; a per-radar N+1 would scale with radar count
+
+
 def test_update_radar(client: TestClient) -> None:
     radar_payload = {"name": "Radar to Update", "purpose": "Initial purpose."}
     create_response = client.post("/api/v1/radars", json=radar_payload)

@@ -22,7 +22,7 @@ class RadarDb:
 
     def get_all(self) -> list[Radar]:
         """Get all radars, newest first with a stable tie-break."""
-        statement = select(Radar).order_by(Radar.created_at.desc(), Radar.id)
+        statement = select(Radar).order_by(Radar.created_at.desc(), Radar.id).options(selectinload(Radar.blips))
         return list(self.__db.scalars(statement).all())
 
     def get_by_id(self, radar_id: UUID) -> Radar | None:

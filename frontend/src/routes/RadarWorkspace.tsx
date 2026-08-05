@@ -54,19 +54,30 @@ export function RadarWorkspace() {
         setLoadError(null);
         setNotFound(false);
         setRadar(null);
+        let cancelled = false;
         getRadar(radarId)
-            .then(setRadar)
+            .then((detail) => {
+                if (!cancelled) {
+                    setRadar(detail);
+                }
+            })
             .catch((error: unknown) => {
+                if (cancelled) {
+                    return;
+                }
                 if (error instanceof ApiError && error.code === "not_found") {
                     setNotFound(true);
                     return;
                 }
                 setLoadError(toErrorMessage(error, "Failed to load radar."));
             });
+        return () => {
+            cancelled = true;
+        };
     }, [radarId]);
 
     useEffect(() => {
-        load();
+        return load();
     }, [load]);
 
     /** Just-created radars open in Edit mode; opening an existing radar defaults to View. */

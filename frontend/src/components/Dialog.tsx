@@ -14,10 +14,15 @@ interface DialogProps {
 export function Dialog({ titleId, title, onClose, children, className }: DialogProps) {
     const rootRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<Element | null>(null);
+    const titleRef = useRef(title);
+    titleRef.current = title;
 
     useEffect(() => {
         triggerRef.current = document.activeElement;
         const focusable = rootRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+        if (focusable === undefined || focusable.length === 0) {
+            console.warn(`Dialog "${titleRef.current}" opened with no focusable child; focus was not moved.`);
+        }
         focusable?.[0]?.focus();
 
         return () => {

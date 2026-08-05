@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Dialog } from "./Dialog";
 
@@ -22,6 +22,10 @@ function Harness() {
 }
 
 describe("Dialog", () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
     it("focuses the first focusable element on open", () => {
         render(<Harness />);
 
@@ -63,5 +67,17 @@ describe("Dialog", () => {
         fireEvent.keyDown(screen.getByRole("button", { name: "First" }), { key: "Escape" });
 
         expect(trigger).toHaveFocus();
+    });
+
+    it("warns in dev when opened with no focusable child", () => {
+        const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => { });
+
+        render(
+            <Dialog titleId="empty-title" title="Empty dialog" onClose={() => { }}>
+                {null}
+            </Dialog>,
+        );
+
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("Empty dialog"));
     });
 });
