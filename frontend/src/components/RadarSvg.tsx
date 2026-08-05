@@ -3,11 +3,12 @@ import { indexById } from "../collections";
 import { titleCase } from "../format";
 import {
     computeRadarGeometry,
+    BASE_MARKER_RADIUS,
     type BlipInput as GeometryBlipInput,
     type RingInput as GeometryRingInput,
     type SectorInput as GeometrySectorInput,
 } from "../geometry/radarGeometry";
-import { ringColor } from "../ringColor";
+import { ringColor, ringTextColor } from "../ringColor";
 
 export interface RadarSvgProps {
     radarName: string;
@@ -24,7 +25,6 @@ export interface RadarSvgProps {
 
 /** Fixed square viewBox size; geometry scales every distance as a fraction of this. */
 const SIZE = 600;
-const MARKER_RADIUS = 8;
 
 export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSelect, markerRef, onSelectQuadrant }: RadarSvgProps) {
     const quadrantById = indexById(quadrants);
@@ -77,6 +77,7 @@ export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSel
                     {titleCase(ringById.get(ring.ringId)?.name ?? "")}
                 </text>
             ))}
+            {/* Quadrant boundary lines; quadrant names live only in RadarGlossary, never drawn on the plot. */}
             {geometry.sectors.map((sector) => {
                 const quadrantLabel = titleCase(quadrantById.get(sector.quadrantId)?.name ?? "");
                 return (
@@ -98,9 +99,6 @@ export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSel
                             y2={sector.boundaryEnd.y}
                             stroke="currentColor"
                         />
-                        <text x={sector.labelPosition.x} y={sector.labelPosition.y} textAnchor="middle">
-                            {quadrantLabel}
-                        </text>
                     </g>
                 );
             })}
@@ -133,12 +131,23 @@ export function RadarSvg({ radarName, quadrants, rings, blips, selectedId, onSel
                         <circle
                             cx={marker.x}
                             cy={marker.y}
-                            r={MARKER_RADIUS}
+                            r={marker.markerRadius}
                             fill={color}
                             stroke={isSelected ? "var(--accent)" : "var(--bg)"}
                             strokeWidth={isSelected ? 2 : 1}
                         />
-                        <text x={marker.x} y={marker.y} textAnchor="middle" dominantBaseline="middle" aria-hidden="true">
+                        <text
+                            x={marker.x}
+                            y={marker.y}
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            className="marker-number"
+                            style={{
+                                fill: ringTextColor(ringIndexById.get(marker.ringId) ?? 0, geometry.rings.length),
+                                fontSize: Math.max(6, 9 * (marker.markerRadius / BASE_MARKER_RADIUS)),
+                            }}
+                            aria-hidden="true"
+                        >
                             {index + 1}
                         </text>
                     </g>

@@ -7,16 +7,22 @@ interface DialogProps {
     title: string;
     onClose: () => void;
     children: React.ReactNode;
+    className?: string;
 }
 
 /** Hand-rolled modal (focus trap + Escape + restore-focus-on-close): jsdom has no HTMLDialogElement support to test against. */
-export function Dialog({ titleId, title, onClose, children }: DialogProps) {
+export function Dialog({ titleId, title, onClose, children, className }: DialogProps) {
     const rootRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<Element | null>(null);
+    const titleRef = useRef(title);
+    titleRef.current = title;
 
     useEffect(() => {
         triggerRef.current = document.activeElement;
         const focusable = rootRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+        if (focusable === undefined || focusable.length === 0) {
+            console.warn(`Dialog "${titleRef.current}" opened with no focusable child; focus was not moved.`);
+        }
         focusable?.[0]?.focus();
 
         return () => {
@@ -55,7 +61,14 @@ export function Dialog({ titleId, title, onClose, children }: DialogProps) {
 
     return (
         <div className="dialog-backdrop">
-            <div className="dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} ref={rootRef} onKeyDown={handleKeyDown}>
+            <div
+                className={className === undefined ? "dialog" : `dialog ${className}`}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={titleId}
+                ref={rootRef}
+                onKeyDown={handleKeyDown}
+            >
                 <h2 id={titleId}>{title}</h2>
                 {children}
             </div>

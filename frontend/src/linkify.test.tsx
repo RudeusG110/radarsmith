@@ -35,4 +35,26 @@ describe("linkify", () => {
         expect(container.querySelector("b")).not.toBeInTheDocument();
         expect(screen.getByText("<script>alert(1)</script> and <b>bold</b>")).toBeInTheDocument();
     });
+
+    it("excludes a trailing sentence-ending period from the link", () => {
+        const { container } = render(<p>{linkify("see https://example.com.")}</p>);
+
+        const link = screen.getByRole("link", { name: "https://example.com" });
+        expect(link).toHaveAttribute("href", "https://example.com");
+        expect(container.textContent).toBe("see https://example.com.");
+    });
+
+    it("excludes a wrapping closing parenthesis from the link", () => {
+        render(<p>{linkify("(https://example.com)")}</p>);
+
+        const link = screen.getByRole("link", { name: "https://example.com" });
+        expect(link).toHaveAttribute("href", "https://example.com");
+    });
+
+    it("keeps a closing parenthesis that balances one inside the URL", () => {
+        render(<p>{linkify("see https://en.example.org/wiki/Foo_(bar)")}</p>);
+
+        const link = screen.getByRole("link", { name: "https://en.example.org/wiki/Foo_(bar)" });
+        expect(link).toHaveAttribute("href", "https://en.example.org/wiki/Foo_(bar)");
+    });
 });

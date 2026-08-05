@@ -1,24 +1,44 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { TopBar } from "../components/TopBar";
+import { WorkspaceChromeProvider } from "../components/WorkspaceChromeProvider";
 import { makeBlip, makeQuadrant, makeRadarDetail, makeRing, stubMatchMedia } from "../test/factories";
 import { RadarWorkspace } from "./RadarWorkspace";
 
 function renderWorkspace(radarId = "r1", locationState?: { justCreated: boolean }) {
     render(
-        <MemoryRouter initialEntries={[{ pathname: `/radars/${radarId}`, state: locationState }]}>
-            <Routes>
-                <Route path="/radars" element={<p>Radar library</p>} />
-                <Route path="/radars/:radarId" element={<RadarWorkspace />} />
-            </Routes>
-        </MemoryRouter>,
+        <WorkspaceChromeProvider>
+            <MemoryRouter initialEntries={[{ pathname: `/radars/${radarId}`, state: locationState }]}>
+                <TopBar />
+                <Routes>
+                    <Route path="/radars" element={<p>Radar library</p>} />
+                    <Route path="/radars/:radarId" element={<RadarWorkspace />} />
+                </Routes>
+            </MemoryRouter>
+        </WorkspaceChromeProvider>,
     );
 }
 
 /** Most existing coverage exercises Edit mode's add/edit/delete workflow, so land there directly. */
 function renderEditWorkspace(radarId = "r1") {
     renderWorkspace(radarId, { justCreated: true });
+}
+
+function renderWorkspaceWithNavigation(fromRadarId: string, toRadarId: string) {
+    render(
+        <WorkspaceChromeProvider>
+            <MemoryRouter initialEntries={[`/radars/${fromRadarId}`]}>
+                <TopBar />
+                <Link to={`/radars/${toRadarId}`}>Go to other radar</Link>
+                <Routes>
+                    <Route path="/radars" element={<p>Radar library</p>} />
+                    <Route path="/radars/:radarId" element={<RadarWorkspace />} />
+                </Routes>
+            </MemoryRouter>
+        </WorkspaceChromeProvider>,
+    );
 }
 
 describe("RadarWorkspace", () => {
@@ -63,6 +83,38 @@ describe("RadarWorkspace", () => {
         renderEditWorkspace();
 
         expect(await screen.findByText("No blips yet.")).toBeInTheDocument();
+    });
+
+    it("ignores a stale response after navigating to a different radar", async () => {
+        const radarA = makeRadarDetail({ name: "Radar A" });
+        const radarB = makeRadarDetail({ name: "Radar B" });
+        let resolveA: (response: Response) => void = () => { };
+        let resolveB: (response: Response) => void = () => { };
+
+        vi.stubGlobal(
+            "fetch",
+            vi.fn((input: Request) => {
+                if (input.url.includes("/radars/radar-a")) {
+                    return new Promise<Response>((resolve) => {
+                        resolveA = resolve;
+                    });
+                }
+                return new Promise<Response>((resolve) => {
+                    resolveB = resolve;
+                });
+            }),
+        );
+
+        renderWorkspaceWithNavigation("radar-a", "radar-b");
+        fireEvent.click(screen.getByRole("link", { name: "Go to other radar" }));
+
+        // The newer request (radar-b) resolves first, then the stale one (radar-a) resolves late.
+        await act(async () => resolveB(Response.json(radarB, { status: 200 })));
+        expect(await screen.findByRole("heading", { name: "Radar B" })).toBeInTheDocument();
+
+        await act(async () => resolveA(Response.json(radarA, { status: 200 })));
+        expect(screen.getByRole("heading", { name: "Radar B" })).toBeInTheDocument();
+        expect(screen.queryByRole("heading", { name: "Radar A" })).not.toBeInTheDocument();
     });
 
     it("shows a not-found state with a link back to the library", async () => {
@@ -171,19 +223,16 @@ describe("RadarWorkspace", () => {
         await screen.findByRole("cell", { name: "Service Mesh" });
         expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
         expect(screen.getByRole("graphics-symbol")).toBeInTheDocument();
-        expect(screen.getByText("Select a blip marker or row to see its details.")).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole("button", { name: "Service Mesh" }));
 
         expect(screen.getByRole("button", { name: "Service Mesh" })).toHaveAttribute("aria-pressed", "true");
         expect(screen.getByRole("graphics-symbol").querySelector("circle")).toHaveAttribute("stroke", "var(--accent)");
-        expect(screen.getByRole("heading", { name: "Service Mesh" })).toBeInTheDocument();
         expect(screen.getByRole("graphics-symbol")).toHaveFocus();
 
         fireEvent.click(screen.getByRole("graphics-symbol"));
 
         expect(screen.getByRole("button", { name: "Service Mesh" })).toHaveAttribute("aria-pressed", "false");
-        expect(screen.getByText("Select a blip marker or row to see its details.")).toBeInTheDocument();
     });
 
     it("selects and focuses a row when its unselected marker is clicked first", async () => {
@@ -201,7 +250,6 @@ describe("RadarWorkspace", () => {
 
         expect(screen.getByRole("button", { name: "Service Mesh" })).toHaveAttribute("aria-pressed", "true");
         expect(screen.getByRole("button", { name: "Service Mesh" })).toHaveFocus();
-        expect(screen.getByRole("heading", { name: "Service Mesh" })).toBeInTheDocument();
     });
 
     it("shows Radar/Blips tabs on narrow screens and preserves selection across tab switches", async () => {
@@ -223,7 +271,6 @@ describe("RadarWorkspace", () => {
 
         expect(screen.getByRole("tab", { name: "Blips" })).toHaveAttribute("aria-selected", "true");
         expect(screen.getByRole("button", { name: "Service Mesh" })).toHaveAttribute("aria-pressed", "true");
-        expect(screen.getByRole("heading", { name: "Service Mesh" })).toBeInTheDocument();
     });
 
     it("preserves selection when resizing from wide to narrow", async () => {
@@ -242,7 +289,7 @@ describe("RadarWorkspace", () => {
         act(() => media.setMatches(true));
 
         expect(await screen.findByRole("tablist", { name: "Workspace view" })).toBeInTheDocument();
-        expect(screen.getByRole("heading", { name: "Service Mesh" })).toBeInTheDocument();
+        expect(screen.getByRole("graphics-symbol").querySelector("circle")).toHaveAttribute("stroke", "var(--accent)");
     });
 
     it("defaults to View mode when opening an existing radar, with no edit affordances", async () => {

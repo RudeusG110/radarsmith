@@ -24,8 +24,7 @@ def create_radar(app_context: Annotated[AppContext, Depends(get_app_context)], r
 def get_radars(app_context: Annotated[AppContext, Depends(get_app_context)]) -> list[RadarSummaryOut]:
     """Get all radars."""
     radar_api = RadarService(app_context)
-    radars = radar_api.get_radars()
-    return [RadarSummaryOut.model_validate(radar) for radar in radars]
+    return radar_api.get_radars()
 
 
 @router.get("/{radar_id}", description="Get a radar by ID", responses=IDENTIFIED_ERROR_RESPONSES)

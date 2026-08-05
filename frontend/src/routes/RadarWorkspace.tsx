@@ -1,23 +1,23 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 
 import { ApiError, toErrorMessage } from "../api/errors";
 import { getRadar, type Blip, type RadarDetail } from "../api/radars";
 import { AddBlipDrawer } from "../components/AddBlipDrawer";
-import { BlipDetailPanel } from "../components/BlipDetailPanel";
 import { BlipTable } from "../components/BlipTable";
 import { DeleteBlipDialog } from "../components/DeleteBlipDialog";
 import { EditBlipDrawer } from "../components/EditBlipDrawer";
+import { RadarGlossary } from "../components/RadarGlossary";
 import { RadarSvg } from "../components/RadarSvg";
 import { RadarViewPanel, type RadarViewSelection } from "../components/RadarViewPanel";
 import { Tabs, type TabItem } from "../components/Tabs";
 import { indexById } from "../collections";
 import { titleCase } from "../format";
 import { useMediaQuery } from "../useMediaQuery";
+import { useWorkspaceChrome, type WorkspaceMode } from "../workspaceChrome";
 
 type OpenDialog = { kind: "add" } | { kind: "edit"; blip: Blip } | { kind: "delete"; blip: Blip } | null;
 type WorkspaceTab = "radar" | "blips";
-type WorkspaceMode = "view" | "edit";
 type ViewSelectionState = { kind: "blip"; blipId: string } | { kind: "quadrant"; quadrantId: string } | null;
 
 const NARROW_QUERY = "(max-width: 860px)";
@@ -40,6 +40,12 @@ export function RadarWorkspace() {
     const isNarrow = useMediaQuery(NARROW_QUERY);
     const markerRefs = useRef(new Map<string, SVGGElement>());
     const rowRefs = useRef(new Map<string, HTMLButtonElement>());
+    const { setChrome } = useWorkspaceChrome();
+
+    const handleModeChange = useCallback((next: WorkspaceMode) => {
+        setMode(next);
+        setOpenDialog(null);
+    }, []);
 
     const load = useCallback(() => {
         if (radarId === undefined) {
@@ -48,19 +54,30 @@ export function RadarWorkspace() {
         setLoadError(null);
         setNotFound(false);
         setRadar(null);
+        let cancelled = false;
         getRadar(radarId)
-            .then(setRadar)
+            .then((detail) => {
+                if (!cancelled) {
+                    setRadar(detail);
+                }
+            })
             .catch((error: unknown) => {
+                if (cancelled) {
+                    return;
+                }
                 if (error instanceof ApiError && error.code === "not_found") {
                     setNotFound(true);
                     return;
                 }
                 setLoadError(toErrorMessage(error, "Failed to load radar."));
             });
+        return () => {
+            cancelled = true;
+        };
     }, [radarId]);
 
     useEffect(() => {
-        load();
+        return load();
     }, [load]);
 
     /** Just-created radars open in Edit mode; opening an existing radar defaults to View. */
@@ -69,6 +86,20 @@ export function RadarWorkspace() {
         setMode(justCreated ? "edit" : "view");
         setViewSelection(null);
     }, [radarId, location.state]);
+
+    /**
+     * Publishes the crumb/mode-toggle to the persistent TopBar instead of rendering them here.
+     * Uses useLayoutEffect (not useEffect) so it commits synchronously with the radar/mode
+     * render it depends on, instead of one tick later.
+     */
+    useLayoutEffect(() => {
+        if (radar === null) {
+            setChrome(null);
+            return;
+        }
+        setChrome({ radarName: radar.name, mode, onModeChange: handleModeChange });
+        return () => setChrome(null);
+    }, [radar, mode, handleModeChange, setChrome]);
 
     if (notFound) {
         return (
@@ -100,10 +131,6 @@ export function RadarWorkspace() {
 
     const quadrantById = indexById(radar.quadrants);
     const ringById = indexById(radar.rings);
-    const selectedBlip = radar.blips.find((blip) => blip.id === selectedBlipId) ?? null;
-    const selectedQuadrantLabel =
-        selectedBlip === null ? "" : titleCase(quadrantById.get(selectedBlip.quadrant_id)?.name ?? "Unknown");
-    const selectedRingLabel = selectedBlip === null ? "" : titleCase(ringById.get(selectedBlip.ring_id)?.name ?? "Unknown");
 
     const orderedRings = [...radar.rings].sort((a, b) => a.position - b.position);
     const viewPanelSelection: RadarViewSelection =
@@ -144,11 +171,6 @@ export function RadarWorkspace() {
         }
         const target = source === "row" ? markerRefs.current.get(id) : rowRefs.current.get(id);
         target?.focus();
-    }
-
-    function handleModeChange(next: WorkspaceMode) {
-        setMode(next);
-        setOpenDialog(null);
     }
 
     function handleSelectViewBlip(id: string) {
@@ -194,15 +216,21 @@ export function RadarWorkspace() {
     }
 
     const editRadarView = (
-        <RadarSvg
-            radarName={radar.name}
-            quadrants={radar.quadrants}
-            rings={radar.rings}
-            blips={radar.blips}
-            selectedId={selectedBlipId}
-            onSelect={(id) => handleSelect(id, "marker")}
-            markerRef={registerMarkerRef}
-        />
+        <div className="panel radar-panel">
+            <div className="panel-title">Radar</div>
+            <div className="radar-wrap">
+                <RadarSvg
+                    radarName={radar.name}
+                    quadrants={radar.quadrants}
+                    rings={radar.rings}
+                    blips={radar.blips}
+                    selectedId={selectedBlipId}
+                    onSelect={(id) => handleSelect(id, "marker")}
+                    markerRef={registerMarkerRef}
+                />
+            </div>
+            <RadarGlossary quadrants={radar.quadrants} rings={radar.rings} />
+        </div>
     );
     const tableView = (
         <BlipTable
@@ -217,53 +245,43 @@ export function RadarWorkspace() {
             rowRef={registerRowRef}
         />
     );
-
-    return (
-        <main>
-            <h1>{radar.name}</h1>
-            <p>{radar.purpose ?? "No purpose set"}</p>
-            <dl>
-                <dt>Quadrants</dt>
-                <dd>{radar.quadrants.map((quadrant) => titleCase(quadrant.name)).join(", ")}</dd>
-                <dt>Rings</dt>
-                <dd>{radar.rings.map((ring) => titleCase(ring.name)).join(", ")}</dd>
-            </dl>
-            <div className="mode-toggle" role="group" aria-label="Workspace mode">
-                <button
-                    type="button"
-                    className={mode === "view" ? "active" : undefined}
-                    aria-pressed={mode === "view"}
-                    onClick={() => handleModeChange("view")}
-                >
-                    View
-                </button>
-                <button
-                    type="button"
-                    className={mode === "edit" ? "active" : undefined}
-                    aria-pressed={mode === "edit"}
-                    onClick={() => handleModeChange("edit")}
-                >
-                    Edit
+    const blipsPanel = (
+        <div className="panel blips-panel">
+            <div className="panel-title">
+                Blips
+                <button type="button" className="btn primary" onClick={() => setOpenDialog({ kind: "add" })}>
+                    + Add Blip
                 </button>
             </div>
+            <div className="panel-body">{tableView}</div>
+        </div>
+    );
+
+    return (
+        <main className="workspace-main">
+            <h1>{radar.name}</h1>
+            <p>{radar.purpose ?? "No purpose set"}</p>
             {mode === "view" ? (
                 <div className="view-grid">
-                    <RadarSvg
-                        radarName={radar.name}
-                        quadrants={radar.quadrants}
-                        rings={radar.rings}
-                        blips={radar.blips}
-                        selectedId={viewSelection?.kind === "blip" ? viewSelection.blipId : null}
-                        onSelect={handleSelectViewBlip}
-                        onSelectQuadrant={handleSelectViewQuadrant}
-                    />
+                    <div className="panel radar-panel">
+                        <div className="panel-title">Radar</div>
+                        <div className="radar-wrap">
+                            <RadarSvg
+                                radarName={radar.name}
+                                quadrants={radar.quadrants}
+                                rings={radar.rings}
+                                blips={radar.blips}
+                                selectedId={viewSelection?.kind === "blip" ? viewSelection.blipId : null}
+                                onSelect={handleSelectViewBlip}
+                                onSelectQuadrant={handleSelectViewQuadrant}
+                            />
+                        </div>
+                        <RadarGlossary quadrants={radar.quadrants} rings={radar.rings} />
+                    </div>
                     <RadarViewPanel selection={viewPanelSelection} onSelectBlip={handleSelectViewBlip} />
                 </div>
             ) : (
                 <>
-                    <button type="button" className="btn primary" onClick={() => setOpenDialog({ kind: "add" })}>
-                        + Add Blip
-                    </button>
                     {isNarrow ? (
                         <>
                             <Tabs
@@ -276,16 +294,15 @@ export function RadarWorkspace() {
                                 {editRadarView}
                             </div>
                             <div role="tabpanel" id="blips-panel" aria-labelledby="blips-tab" hidden={activeTab !== "blips"}>
-                                {tableView}
+                                {blipsPanel}
                             </div>
                         </>
                     ) : (
-                        <div className="workspace-grid">
+                        <div className="edit-grid">
                             {editRadarView}
-                            {tableView}
+                            {blipsPanel}
                         </div>
                     )}
-                    <BlipDetailPanel blip={selectedBlip} quadrantLabel={selectedQuadrantLabel} ringLabel={selectedRingLabel} />
                 </>
             )}
             {openDialog?.kind === "add" && (

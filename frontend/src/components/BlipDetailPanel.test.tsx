@@ -30,4 +30,12 @@ describe("BlipDetailPanel", () => {
         expect(container.querySelector("script")).not.toBeInTheDocument();
         expect(screen.getByText("<script>alert(1)</script>", { exact: false })).toBeInTheDocument();
     });
+
+    it("omits the description when showDescription is false", () => {
+        const blip = makeBlip({ name: "Service Mesh", description: "See https://example.com/docs for more." });
+        render(<BlipDetailPanel blip={blip} quadrantLabel="Techniques" ringLabel="Adopt" showDescription={false} />);
+
+        expect(screen.getByRole("heading", { name: "Service Mesh" })).toBeInTheDocument();
+        expect(screen.queryByText("See https://example.com/docs for more.", { exact: false })).not.toBeInTheDocument();
+    });
 });

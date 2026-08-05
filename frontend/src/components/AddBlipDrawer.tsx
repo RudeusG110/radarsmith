@@ -65,7 +65,7 @@ export function AddBlipDrawer({ radarId, quadrants, rings, onCreated, onCancel }
     }
 
     return (
-        <Dialog titleId="add-blip-title" title="Add blip" onClose={onCancel}>
+        <Dialog titleId="add-blip-title" title="Add blip" onClose={onCancel} className="dialog--form">
             <form aria-busy={submitting} onSubmit={(event) => void handleSubmit(event)}>
                 <div>
                     <label htmlFor="add-blip-name">Name</label>
@@ -84,6 +84,28 @@ export function AddBlipDrawer({ radarId, quadrants, rings, onCreated, onCancel }
                         </p>
                     )}
                 </div>
+                <div className="field-row">
+                    <div>
+                        <label htmlFor="add-blip-quadrant">Quadrant</label>
+                        <select id="add-blip-quadrant" value={quadrantId} onChange={(event) => setQuadrantId(event.target.value)} disabled={submitting}>
+                            {quadrants.map((quadrant) => (
+                                <option key={quadrant.id} value={quadrant.id}>
+                                    {titleCase(quadrant.name)}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="add-blip-ring">Ring</label>
+                        <select id="add-blip-ring" value={ringId} onChange={(event) => setRingId(event.target.value)} disabled={submitting}>
+                            {rings.map((ring) => (
+                                <option key={ring.id} value={ring.id}>
+                                    {titleCase(ring.name)}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
                 <div>
                     <label htmlFor="add-blip-description">Description</label>
                     <textarea
@@ -94,6 +116,7 @@ export function AddBlipDrawer({ radarId, quadrants, rings, onCreated, onCancel }
                         aria-invalid={descriptionError !== null}
                         aria-describedby={descriptionError !== null ? "add-blip-description-error" : undefined}
                         disabled={submitting}
+                        rows={6}
                     />
                     {descriptionError !== null && (
                         <p id="add-blip-description-error" role="alert">
@@ -101,37 +124,19 @@ export function AddBlipDrawer({ radarId, quadrants, rings, onCreated, onCancel }
                         </p>
                     )}
                 </div>
-                <div>
-                    <label htmlFor="add-blip-quadrant">Quadrant</label>
-                    <select id="add-blip-quadrant" value={quadrantId} onChange={(event) => setQuadrantId(event.target.value)} disabled={submitting}>
-                        {quadrants.map((quadrant) => (
-                            <option key={quadrant.id} value={quadrant.id}>
-                                {titleCase(quadrant.name)}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                <div>
-                    <label htmlFor="add-blip-ring">Ring</label>
-                    <select id="add-blip-ring" value={ringId} onChange={(event) => setRingId(event.target.value)} disabled={submitting}>
-                        {rings.map((ring) => (
-                            <option key={ring.id} value={ring.id}>
-                                {titleCase(ring.name)}
-                            </option>
-                        ))}
-                    </select>
-                </div>
                 {submitError !== null && (
                     <p role="alert" tabIndex={-1} ref={submitErrorRef}>
                         {submitError}
                     </p>
                 )}
-                <button type="submit" className="btn primary" disabled={submitting}>
-                    {submitting ? "Adding…" : "Add blip"}
-                </button>
-                <button type="button" className="btn" onClick={onCancel} disabled={submitting}>
-                    Cancel
-                </button>
+                <div className="form-actions">
+                    <button type="submit" className="btn primary" disabled={submitting}>
+                        {submitting ? "Adding…" : "Add blip"}
+                    </button>
+                    <button type="button" className="btn" onClick={onCancel} disabled={submitting}>
+                        Cancel
+                    </button>
+                </div>
             </form>
         </Dialog>
     );

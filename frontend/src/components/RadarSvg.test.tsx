@@ -126,6 +126,16 @@ describe("RadarSvg", () => {
         expect(bands[2]).toHaveAttribute("fill", "var(--panel-2)");
     });
 
+    it("does not draw quadrant names on the plot (they live in RadarGlossary instead)", () => {
+        const { container } = render(
+            <RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={[]} selectedId={null} onSelect={vi.fn()} />,
+        );
+
+        const texts = [...container.querySelectorAll("text")].map((node) => node.textContent);
+        expect(texts).not.toContain("Techniques");
+        expect(texts).not.toContain("Tools");
+    });
+
     it("gives each marker a native <title> tooltip carrying the blip name", () => {
         const blips = [makeBlip({ id: "b1", name: "Service Mesh", quadrant_id: "q1", ring_id: "ring1" })];
         render(<RadarSvg radarName="Engineering Radar" quadrants={quadrants} rings={rings} blips={blips} selectedId={null} onSelect={vi.fn()} />);

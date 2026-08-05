@@ -33,5 +33,10 @@ export async function unwrap<Data>(call: Promise<RawResult<Data>>): Promise<Data
         throw new ApiError(result.error.error.code, result.error.error.message, result.response.status);
     }
 
+    if (result.data === undefined && !result.response.ok) {
+        // Genuinely unexpected: a failed response with neither a parsed error body nor data.
+        throw new Error("Unexpected response: no data or error returned.");
+    }
+
     return result.data as Data;
 }

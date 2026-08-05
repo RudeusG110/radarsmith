@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { toErrorMessage } from "../api/errors";
 import { createRadar, type RadarDetail } from "../api/radars";
 import { useToast } from "../toast";
+import { Dialog } from "./Dialog";
 
 interface NewRadarFormProps {
     onCreated: (radar: RadarDetail) => void;
@@ -48,44 +49,46 @@ export function NewRadarForm({ onCreated, onCancel }: NewRadarFormProps) {
     }
 
     return (
-        <form aria-label="New radar" aria-busy={submitting} onSubmit={(event) => void handleSubmit(event)}>
-            <div>
-                <label htmlFor="new-radar-name">Name</label>
-                <input
-                    id="new-radar-name"
-                    ref={nameInputRef}
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    aria-invalid={nameError !== null}
-                    aria-describedby={nameError !== null ? "new-radar-name-error" : undefined}
-                    disabled={submitting}
-                />
-                {nameError !== null && (
-                    <p id="new-radar-name-error" role="alert">
-                        {nameError}
+        <Dialog titleId="new-radar-title" title="New Radar" onClose={onCancel}>
+            <form aria-busy={submitting} onSubmit={(event) => void handleSubmit(event)}>
+                <div>
+                    <label htmlFor="new-radar-name">Name</label>
+                    <input
+                        id="new-radar-name"
+                        ref={nameInputRef}
+                        value={name}
+                        onChange={(event) => setName(event.target.value)}
+                        aria-invalid={nameError !== null}
+                        aria-describedby={nameError !== null ? "new-radar-name-error" : undefined}
+                        disabled={submitting}
+                    />
+                    {nameError !== null && (
+                        <p id="new-radar-name-error" role="alert">
+                            {nameError}
+                        </p>
+                    )}
+                </div>
+                <div>
+                    <label htmlFor="new-radar-purpose">Purpose (optional)</label>
+                    <input
+                        id="new-radar-purpose"
+                        value={purpose}
+                        onChange={(event) => setPurpose(event.target.value)}
+                        disabled={submitting}
+                    />
+                </div>
+                {submitError !== null && (
+                    <p role="alert" tabIndex={-1} ref={submitErrorRef}>
+                        {submitError}
                     </p>
                 )}
-            </div>
-            <div>
-                <label htmlFor="new-radar-purpose">Purpose (optional)</label>
-                <input
-                    id="new-radar-purpose"
-                    value={purpose}
-                    onChange={(event) => setPurpose(event.target.value)}
-                    disabled={submitting}
-                />
-            </div>
-            {submitError !== null && (
-                <p role="alert" tabIndex={-1} ref={submitErrorRef}>
-                    {submitError}
-                </p>
-            )}
-            <button type="submit" className="btn primary" disabled={submitting}>
-                {submitting ? "Creating…" : "Create radar"}
-            </button>
-            <button type="button" className="btn" onClick={onCancel} disabled={submitting}>
-                Cancel
-            </button>
-        </form>
+                <button type="submit" className="btn primary" disabled={submitting}>
+                    {submitting ? "Creating…" : "Create radar"}
+                </button>
+                <button type="button" className="btn" onClick={onCancel} disabled={submitting}>
+                    Cancel
+                </button>
+            </form>
+        </Dialog>
     );
 }

@@ -7,7 +7,7 @@ from app.crud.ring import RingDb
 from app.domain.constants import DEFAULT_QUADRANTS, DEFAULT_RINGS
 from app.domain.exceptions import RadarNotFoundError
 from app.models.models import Radar
-from app.schemas.radar import RadarPatch, RadarPost
+from app.schemas.radar import RadarPatch, RadarPost, RadarSummaryOut
 
 
 class RadarService:
@@ -30,9 +30,19 @@ class RadarService:
         self.__ctx.db.commit()
         return radar
 
-    def get_radars(self) -> list[Radar]:
-        """Get all radars."""
-        return self.__radar_db.get_all()
+    def get_radars(self) -> list[RadarSummaryOut]:
+        """Get all radars as summaries, each carrying its own blip count."""
+        return [
+            RadarSummaryOut(
+                id=radar.id,
+                name=radar.name,
+                purpose=radar.purpose,
+                created_at=radar.created_at,
+                updated_at=radar.updated_at,
+                blip_count=len(radar.blips),
+            )
+            for radar in self.__radar_db.get_all()
+        ]
 
     def get_radar(self, radar_id: UUID) -> Radar:
         """Get a radar by ID."""

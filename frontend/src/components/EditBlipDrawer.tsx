@@ -74,7 +74,7 @@ export function EditBlipDrawer({ radarId, blip, quadrants, rings, onSaved, onCan
     }
 
     return (
-        <Dialog titleId="edit-blip-title" title="Edit blip" onClose={onCancel}>
+        <Dialog titleId="edit-blip-title" title="Edit blip" onClose={onCancel} className="dialog--form">
             <form aria-busy={submitting} onSubmit={(event) => void handleSubmit(event)}>
                 <div>
                     <label htmlFor="edit-blip-name">Name</label>
@@ -93,6 +93,28 @@ export function EditBlipDrawer({ radarId, blip, quadrants, rings, onSaved, onCan
                         </p>
                     )}
                 </div>
+                <div className="field-row">
+                    <div>
+                        <label htmlFor="edit-blip-quadrant">Quadrant</label>
+                        <select id="edit-blip-quadrant" value={quadrantId} onChange={(event) => setQuadrantId(event.target.value)} disabled={submitting}>
+                            {quadrants.map((quadrant) => (
+                                <option key={quadrant.id} value={quadrant.id}>
+                                    {titleCase(quadrant.name)}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="edit-blip-ring">Ring</label>
+                        <select id="edit-blip-ring" value={ringId} onChange={(event) => setRingId(event.target.value)} disabled={submitting}>
+                            {rings.map((ring) => (
+                                <option key={ring.id} value={ring.id}>
+                                    {titleCase(ring.name)}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
                 <div>
                     <label htmlFor="edit-blip-description">Description</label>
                     <textarea
@@ -103,6 +125,7 @@ export function EditBlipDrawer({ radarId, blip, quadrants, rings, onSaved, onCan
                         aria-invalid={descriptionError !== null}
                         aria-describedby={descriptionError !== null ? "edit-blip-description-error" : undefined}
                         disabled={submitting}
+                        rows={6}
                     />
                     {descriptionError !== null && (
                         <p id="edit-blip-description-error" role="alert">
@@ -110,37 +133,19 @@ export function EditBlipDrawer({ radarId, blip, quadrants, rings, onSaved, onCan
                         </p>
                     )}
                 </div>
-                <div>
-                    <label htmlFor="edit-blip-quadrant">Quadrant</label>
-                    <select id="edit-blip-quadrant" value={quadrantId} onChange={(event) => setQuadrantId(event.target.value)} disabled={submitting}>
-                        {quadrants.map((quadrant) => (
-                            <option key={quadrant.id} value={quadrant.id}>
-                                {titleCase(quadrant.name)}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                <div>
-                    <label htmlFor="edit-blip-ring">Ring</label>
-                    <select id="edit-blip-ring" value={ringId} onChange={(event) => setRingId(event.target.value)} disabled={submitting}>
-                        {rings.map((ring) => (
-                            <option key={ring.id} value={ring.id}>
-                                {titleCase(ring.name)}
-                            </option>
-                        ))}
-                    </select>
-                </div>
                 {submitError !== null && (
                     <p role="alert" tabIndex={-1} ref={submitErrorRef}>
                         {submitError}
                     </p>
                 )}
-                <button type="submit" className="btn primary" disabled={!isDirty || submitting}>
-                    {submitting ? "Saving…" : "Save"}
-                </button>
-                <button type="button" className="btn" onClick={onCancel} disabled={submitting}>
-                    Cancel
-                </button>
+                <div className="form-actions">
+                    <button type="submit" className="btn primary" disabled={!isDirty || submitting}>
+                        {submitting ? "Saving…" : "Save"}
+                    </button>
+                    <button type="button" className="btn" onClick={onCancel} disabled={submitting}>
+                        Cancel
+                    </button>
+                </div>
             </form>
         </Dialog>
     );

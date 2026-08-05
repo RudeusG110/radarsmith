@@ -87,6 +87,47 @@ describe("BlipTable", () => {
         expect(onSelect).toHaveBeenCalledWith("b1");
     });
 
+    it("calls onSelect when any other cell in the row is clicked, not just the name button", () => {
+        const blip = makeBlip({ id: "b1", name: "Service Mesh", quadrant_id: "q1", ring_id: "ring1" });
+        const onSelect = vi.fn();
+        render(
+            <BlipTable
+                radarName="Engineering Radar"
+                blips={[blip]}
+                quadrantById={quadrantById}
+                ringById={ringById}
+                selectedId={null}
+                onSelect={onSelect}
+                onEdit={vi.fn()}
+                onDelete={vi.fn()}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole("cell", { name: "Techniques" }));
+        expect(onSelect).toHaveBeenCalledWith("b1");
+    });
+
+    it("does not call onSelect when the Edit or Delete buttons are clicked", () => {
+        const blip = makeBlip({ id: "b1", name: "Service Mesh" });
+        const onSelect = vi.fn();
+        render(
+            <BlipTable
+                radarName="Engineering Radar"
+                blips={[blip]}
+                quadrantById={quadrantById}
+                ringById={ringById}
+                selectedId={null}
+                onSelect={onSelect}
+                onEdit={vi.fn()}
+                onDelete={vi.fn()}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole("button", { name: "Edit Service Mesh" }));
+        fireEvent.click(screen.getByRole("button", { name: "Delete Service Mesh" }));
+        expect(onSelect).not.toHaveBeenCalled();
+    });
+
     it("marks the selected row's name button with aria-pressed", () => {
         const blips = [makeBlip({ id: "b1", name: "Service Mesh" }), makeBlip({ id: "b2", name: "Feature Flags" })];
         render(
