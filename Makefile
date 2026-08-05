@@ -1,9 +1,14 @@
 .PHONY: setup dev test lint format typecheck build db-up db-down db-reset export-openapi \
-	fe-setup fe-dev fe-test fe-lint fe-typecheck fe-build fe-generate-types generate-api-types
+	fe-setup fe-dev fe-test fe-lint fe-typecheck fe-build fe-generate-types generate-api-types \
+	prod-up prod-down
 
 
 COMPOSE_FILE := dev/docker-compose.yml
 COMPOSE := docker compose -f $(COMPOSE_FILE)
+
+PROD_COMPOSE_FILE := deploy/docker-compose.yml
+PROD_ENV_FILE := deploy/.env
+PROD_COMPOSE := docker compose -f $(PROD_COMPOSE_FILE) --env-file $(PROD_ENV_FILE)
 
 # --- Setup ---
 setup:
@@ -77,3 +82,11 @@ generate-api-types: export-openapi fe-generate-types
 
 # --- Combined ---
 build: fe-build
+
+# --- Production stack (see deploy/docker-compose.yml) ---
+prod-up:
+	$(PROD_COMPOSE) up -d --build
+
+prod-down:
+	$(PROD_COMPOSE) down
+
