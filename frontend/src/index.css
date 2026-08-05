@@ -116,6 +116,13 @@ textarea:focus {
     border-color: var(--accent);
 }
 
+textarea {
+    /* Taller than the browser default, capped so the dialog doesn't grow unbounded. */
+    max-height: 16rem;
+    overflow-y: auto;
+    resize: vertical;
+}
+
 [role="alert"] {
     color: var(--danger);
 }
@@ -510,6 +517,9 @@ tr.selected {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    /* Without this, a very tall child (e.g. a long blip table) still inflates the whole
+       document's scrollable height even though it's visually clipped and scrolls internally. */
+    contain: layout;
 }
 
 .side-panel .panel-body {

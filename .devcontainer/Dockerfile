@@ -24,6 +24,8 @@ RUN addgroup \
     "${USERNAME}" \
     && apk add --no-cache \
     bash \
+    docker-cli \
+    docker-cli-compose \
     git \
     make \
     nodejs \

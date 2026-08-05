@@ -116,7 +116,7 @@ export function AddBlipDrawer({ radarId, quadrants, rings, onCreated, onCancel }
                         aria-invalid={descriptionError !== null}
                         aria-describedby={descriptionError !== null ? "add-blip-description-error" : undefined}
                         disabled={submitting}
-                        rows={6}
+                        rows={10}
                     />
                     {descriptionError !== null && (
                         <p id="add-blip-description-error" role="alert">

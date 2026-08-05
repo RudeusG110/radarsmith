@@ -125,7 +125,7 @@ export function EditBlipDrawer({ radarId, blip, quadrants, rings, onSaved, onCan
                         aria-invalid={descriptionError !== null}
                         aria-describedby={descriptionError !== null ? "edit-blip-description-error" : undefined}
                         disabled={submitting}
-                        rows={6}
+                        rows={10}
                     />
                     {descriptionError !== null && (
                         <p id="edit-blip-description-error" role="alert">
