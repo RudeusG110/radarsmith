@@ -1,0 +1,199 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Default to read-only; no job needs write access and none of them use repository secrets.
+permissions:
+  contents: read
+
+env:
+  POETRY_VERSION: "2.2.1"
+  PYTHON_VERSION: "3.13"
+  NODE_VERSION: "24"
+
+jobs:
+  backend-lint:
+    name: Backend / lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: pipx install "poetry==${{ env.POETRY_VERSION }}"
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: poetry
+      - run: poetry install
+      - run: poetry run ruff check .
+
+  backend-typecheck:
+    name: Backend / typecheck (strict)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: pipx install "poetry==${{ env.POETRY_VERSION }}"
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: poetry
+      - run: poetry install
+      - run: poetry run pyright
+
+  backend-test:
+    name: Backend / pytest
+    runs-on: ubuntu-latest
+    services:
+      # Same dev-only credentials as dev/db.env.template; not secret.
+      db:
+        image: postgres:18
+        env:
+          POSTGRES_USER: radarsmith
+          POSTGRES_PASSWORD: devpass
+          POSTGRES_DB: radarsmith
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U radarsmith -d radarsmith"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v7
+      - run: pipx install "poetry==${{ env.POETRY_VERSION }}"
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: poetry
+      - run: poetry install
+      # Test config files target the devcontainer's docker-bridge address (172.17.0.1) for
+      # local dev; the runner reaches the service container via localhost instead. Patched
+      # here only, never committed.
+      - run: sed -i 's/172.17.0.1/localhost/' backend/tests/config/*.env
+      - run: poetry run pytest
+
+  frontend-lint:
+    name: Frontend / lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run lint
+        working-directory: frontend
+
+  frontend-typecheck:
+    name: Frontend / typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run typecheck
+        working-directory: frontend
+
+  frontend-test:
+    name: Frontend / unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run test
+        working-directory: frontend
+
+  frontend-build:
+    name: Frontend / build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+
+  migrations:
+    name: Migrations / upgrade + downgrade
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:18
+        env:
+          POSTGRES_USER: radarsmith
+          POSTGRES_PASSWORD: devpass
+          POSTGRES_DB: radarsmith
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U radarsmith -d radarsmith"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v7
+      - run: pipx install "poetry==${{ env.POETRY_VERSION }}"
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: poetry
+      - run: poetry install
+      - run: echo "rs_api_db_url=postgresql+psycopg://radarsmith:devpass@localhost:5432/radarsmith" > backend/settings.env
+      - run: make up-schema
+      - run: make down-schema
+      - run: make up-schema
+
+  openapi-types-check:
+    name: Generated OpenAPI types are current
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: pipx install "poetry==${{ env.POETRY_VERSION }}"
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: poetry
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: poetry install
+      - run: npm ci
+        working-directory: frontend
+      - run: make generate-api-types
+      - run: git diff --exit-code backend/openapi.json frontend/src/api/schema.d.ts
+
+  docker-build:
+    name: Production image build (no publish)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

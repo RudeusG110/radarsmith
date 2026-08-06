@@ -5,7 +5,6 @@ deploy/.env
 __pycache__
 .ruff_cache
 
-.github
 .agents
 skills-lock.json
 CONTEXT.md
