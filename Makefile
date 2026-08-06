@@ -93,4 +93,3 @@ prod-up: $(PROD_ENV_FILE)
 
 prod-down:
 	$(PROD_COMPOSE) down
-
