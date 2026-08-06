@@ -84,7 +84,11 @@ generate-api-types: export-openapi fe-generate-types
 build: fe-build
 
 # --- Production stack (see deploy/docker-compose.yml) ---
-prod-up:
+# File target: only regenerates deploy/.env when it doesn't already exist.
+$(PROD_ENV_FILE):
+	./deploy/init-env.sh
+
+prod-up: $(PROD_ENV_FILE)
 	$(PROD_COMPOSE) up -d --build
 
 prod-down:

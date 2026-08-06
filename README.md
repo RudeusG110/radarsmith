@@ -109,18 +109,19 @@ non-root container on one port, with a container health check. `deploy/docker-co
 that image alongside PostgreSQL, running migrations as a one-shot job before the app starts.
 Everything binds to `127.0.0.1`; there is no TLS or reverse proxy in the MVP.
 
-First-time setup:
-
-```bash
-cp deploy/.env.template deploy/.env
-# edit deploy/.env: set POSTGRES_PASSWORD and match it in rs_api_db_url
-```
-
 Start a clean, healthy stack (builds the image, runs migrations, then starts the app):
 
 ```bash
 make prod-up
 ```
+
+On first run this also creates `deploy/.env` from `deploy/.env.template` with a randomly
+generated PostgreSQL password (see `deploy/init-env.sh`); later runs leave an existing
+`deploy/.env` untouched, so manual edits are preserved. PostgreSQL only applies
+`POSTGRES_PASSWORD` the first time it initializes its data volume: if you delete `deploy/.env`
+to regenerate the password after the named volume already exists, the database's actual role
+password will not change and the app will fail to authenticate. Reset the volume (`docker
+compose -f deploy/docker-compose.yml down -v`) or edit the password with `ALTER ROLE` instead.
 
 The app is then reachable at http://127.0.0.1:8080 (UI and `/api/v1/*` under one origin).
 `docker compose -f deploy/docker-compose.yml ps` shows container health; `make prod-down` sends

@@ -39,7 +39,13 @@ RUN addgroup \
     && echo 'PS1="\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ "' \
     > "/home/${USERNAME}/.bashrc" \
     && chown "${USERNAME}:${USERNAME}" \
-    "/home/${USERNAME}/.bashrc"
+    "/home/${USERNAME}/.bashrc" \
+    && mkdir -p "/home/${USERNAME}/.docker" \
+    # No credsStore/credHelpers: this image has no credential-helper binaries, and only
+    # pulls public images, so an empty CLI config avoids "error listing credentials" (exit 255).
+    && echo '{}' > "/home/${USERNAME}/.docker/config.json" \
+    && chown -R "${USERNAME}:${USERNAME}" \
+    "/home/${USERNAME}/.docker"
 
 USER ${USERNAME}
 WORKDIR /workspace

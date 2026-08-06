@@ -9,8 +9,8 @@ services:
       - .env
     volumes:
       - postgres_data:/var/lib/postgresql
-    ports:
-      - "127.0.0.1:55433:5432"
+    # No host port: only the app/migrate services reach it, by service name on the
+    # compose network; backup/restore use `docker compose exec db ...` instead.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
