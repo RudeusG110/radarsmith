@@ -21,6 +21,19 @@ radar and its blips: open a radar, edit it in the browser, and see the result im
 - **One-container deploy** — a single Docker image serves the built frontend and the API
   together, backed by PostgreSQL.
 
+## Quick start
+
+Just want to run RadarSmith, not develop it? With Docker and Docker Compose installed:
+
+```bash
+make prod-up     # builds the image, runs migrations, starts the app + PostgreSQL
+```
+
+This prints the URL once the stack is healthy (http://127.0.0.1:8080). See
+[Production deployment](#production-deployment) below for upgrades, backups, and
+troubleshooting. Contributors should use [Getting started](#getting-started) instead, which
+runs the API and frontend dev servers with hot reload.
+
 ## Requirements
 
 - Python 3.13 and [Poetry](https://python-poetry.org/)
@@ -107,11 +120,12 @@ succeeds without a running backend. After changing any endpoint or schema, regen
 make generate-api-types
 ```
 
-If you add CI later, run the same command and fail the build on an uncommitted diff, e.g.:
+CI runs the same command and fails the build on an uncommitted diff (see
+[.github/workflows/ci.yml](.github/workflows/ci.yml)):
 
 ```bash
 make generate-api-types
-git diff --exit-code frontend/src/api/schema.d.ts
+git diff --exit-code backend/openapi.json frontend/src/api/schema.d.ts
 ```
 
 | Command | Purpose |
@@ -147,6 +161,17 @@ The app is then reachable at http://127.0.0.1:8080 (UI and `/api/v1/*` under one
 `SIGTERM` and stops the stack while keeping the named PostgreSQL volume, so restarting with
 `make prod-up` retains prior edits.
 
+### Upgrading
+
+1. Back up the database first (see below).
+2. `git pull` (or check out the new release tag).
+3. `make prod-up` — rebuilds the image, re-runs the one-shot `migrate` service (harmless if
+   there is nothing new to migrate), then restarts `app`. The named PostgreSQL volume and
+   `deploy/.env` are untouched.
+4. Confirm both containers are healthy: `docker compose -f deploy/docker-compose.yml ps`.
+
+### Backup and restore
+
 Back up or restore the database through the running `db` container:
 
 ```bash
@@ -157,11 +182,65 @@ docker compose -f deploy/docker-compose.yml exec db pg_dump -U radarsmith radars
 docker compose -f deploy/docker-compose.yml exec -T db psql -U radarsmith radarsmith < backup.sql
 ```
 
+### Troubleshooting
+
+- **`docker ... error listing credentials ...` / `docker-credential-... not found`** — a
+  broken or missing Docker credential helper. Every `make` target already sets `DOCKER_CONFIG`
+  to the repo-committed, empty `.docker-config` directory (see [Makefile](Makefile)), which
+  avoids this; if you invoke `docker`/`docker compose` directly instead of through `make`,
+  export the same variable yourself (`export DOCKER_CONFIG=$PWD/.docker-config`).
+- **Port already in use (`55432`, `8080`, or `5173`)** — another process or project is bound to
+  that port. Stop it, or edit the host-side port mapping in
+  [dev/docker-compose.yml](dev/docker-compose.yml) or
+  [deploy/docker-compose.yml](deploy/docker-compose.yml).
+- **App fails to authenticate to PostgreSQL after editing `deploy/.env`** — PostgreSQL only
+  applies `POSTGRES_PASSWORD` the first time it initializes its data volume; see
+  [Upgrading](#upgrading) above for the fix (reset the volume or `ALTER ROLE`).
+- **A container never becomes healthy** — check
+  `docker compose -f deploy/docker-compose.yml ps` for status and
+  `docker compose -f deploy/docker-compose.yml logs <service>` for details.
+- **`make fe-build` or CI's OpenAPI check fails with a diff in `schema.d.ts`** — the committed
+  frontend types are stale relative to the backend. Run `make generate-api-types` and commit
+  the result.
+- **`make test` can't reach the database** — the backend test suite needs a running local
+  PostgreSQL; run `make db-up` first.
+
 ## Configuration
 
 Backend settings load from `backend/settings.env` (see
 [backend/settings.env.template](backend/settings.env.template)). Variables use the
 `rs_api_` prefix, e.g. `rs_api_db_url`.
+
+## Supported versions
+
+- **PostgreSQL 18** — pinned in [dev/docker-compose.yml](dev/docker-compose.yml),
+  [deploy/docker-compose.yml](deploy/docker-compose.yml), and CI. Other 1x versions likely
+  work but are untested.
+- **Browsers** — the latest stable release of Chrome, Firefox, Safari, and Edge (desktop and
+  mobile). The frontend targets ES2022 with no polyfills and isn't tested against older or
+  non-evergreen browsers.
+
+## Continuous integration
+
+Every pull request and push to `main` runs backend lint/typecheck/tests, frontend
+lint/typecheck/tests/build, a migration upgrade/downgrade check, an OpenAPI-types-freshness
+check, and a production image build, all defined in
+[.github/workflows/ci.yml](.github/workflows/ci.yml). Each check is a separate job that fails
+independently with its own logs, needs no repository secret, and mirrors a `make` command you
+can run locally (see the tables above and [Frontend API types](#frontend-api-types)).
+
+## Releasing
+
+Tag a release only once CI is green on `main` **and** a manual run-through of the
+[MVP acceptance boundary](doc/architecture/product-spec.md#mvp-acceptance-boundary) still
+holds against a fresh stack. Then:
+
+```bash
+git tag -a vX.Y.Z -m "vX.Y.Z"
+git push origin vX.Y.Z
+```
+
+Keep the tag in sync with the `version` field in [pyproject.toml](pyproject.toml).
 
 ## Documentation
 
