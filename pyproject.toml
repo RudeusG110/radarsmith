@@ -2,8 +2,8 @@
 name = "radarsmith"
 version = "0.1.0"
 description = "Forge your own radar."
-authors = [{ name = "Your Name", email = "you@example.com" }]
-license = ""
+authors = [{ name = "Rudeus", email = "RudeusG110@users.noreply.github.com" }]
+license = "MIT"
 readme = "README.md"
 
 [tool.poetry]

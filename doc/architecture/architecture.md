@@ -171,6 +171,4 @@ to localhost by default; authentication and internet-facing deployment arrive to
 ## See also
 
 - [product-spec.md](./product-spec.md) — problem, users, and capabilities.
-- [roadmap.md](./roadmap.md) — planned capabilities.
-- [mvp-tickets.md](./mvp-tickets.md) — confirmed implementation tickets and acceptance
-  criteria.
+- [adr/](../adr/) — architecture decision records.

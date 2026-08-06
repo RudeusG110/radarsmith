@@ -87,6 +87,3 @@ desktop and mobile. The primary end-to-end test is:
 
 - [architecture.md](./architecture.md) — domain model, system architecture, tech stack,
   and design decisions.
-- [roadmap.md](./roadmap.md) — planned capabilities.
-- [mvp-tickets.md](./mvp-tickets.md) — confirmed implementation tickets and acceptance
-  criteria.
