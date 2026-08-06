@@ -1,61 +1,64 @@
 # RadarSmith
 
-Forge and maintain your own technology radars. A private, self-hosted web app where the
-database is the source of truth for a radar and its blips.
+Forge and maintain your own technology radars. RadarSmith is a private, self-hosted web app
+where the database — not a spreadsheet or a prepared file — is the source of truth for a
+radar and its blips: open a radar, edit it in the browser, and see the result immediately.
 
-See [doc/architecture](doc/architecture/architecture.md) for the design and
-[doc/architecture/mvp-tickets-v2.md](doc/architecture/mvp-tickets-v2.md) for the backlog.
+> [!WARNING]
+> RadarSmith is single-tenant with **no accounts, permissions, or authentication**. It is
+> meant to be run privately (e.g. behind a VPN or on localhost) for one trusted author, not
+> exposed directly to the public internet.
 
-## Layout
+## Features
+
+- **Radar library** — list, create, rename, and delete radars from the browser.
+- **Live linked workspace** — an SVG radar and an authoritative blip table stay in sync;
+  selecting a marker highlights its row and vice versa.
+- **View and Edit modes** — browse a radar read-only with quadrant drill-down, or switch to
+  Edit to add, reposition, and delete blips.
+- **Accessible by design** — WAI-ARIA graphics roles on the SVG, keyboard-operable markers,
+  accessible forms/dialogs, and safe link rendering in descriptions.
+- **One-container deploy** — a single Docker image serves the built frontend and the API
+  together, backed by PostgreSQL.
+
+## Requirements
+
+- Python 3.13 and [Poetry](https://python-poetry.org/)
+- Node.js 24 and npm (for the frontend)
+- Docker and Docker Compose (for PostgreSQL, and for the production stack)
+
+## Getting started
+
+```bash
+make setup       # install backend and frontend dependencies
+make db-up       # start PostgreSQL in Docker
+make up-schema   # apply migrations (also seeds a starter radar)
+make dev         # run the API on http://localhost:8000/docs
+```
+
+In another terminal:
+
+```bash
+make fe-dev      # run the frontend on http://localhost:5173
+```
+
+The frontend dev server proxies `/api/v1` to the backend on port 8000; the API health check
+is served at `GET /api/v1/health`.
+
+## Project layout
 
 ```
 backend/            Python FastAPI application (package: app)
   app/              application code (api, context, database, models, schemas, log)
   alembic/          database migrations
   tests/            backend tests
-frontend/           React + TypeScript + Vite app (built later)
-doc/                architecture, product spec, roadmap, tickets, research
+frontend/           React + TypeScript + Vite app
+deploy/             production Docker Compose stack
+dev/                development Docker Compose stack (PostgreSQL)
+doc/                architecture, product spec, decision records, research
 ```
 
-## Requirements
-
-- Python 3.13 and [Poetry](https://python-poetry.org/)
-- Node.js 24 and npm (for the frontend)
-- Docker (for PostgreSQL, added in a later ticket)
-
-## Setup
-
-```bash
-make setup
-```
-## Database upgrade
-Modify the database model accordingly to your specification. Change to the backend folder in your terminal and run the commands bellow:
-
-```
-alembic -c alembic/alembic.ini revision -m "<add your own comment>" --autogenerate
-```
-
-You should see a new file in alembic/versions folder.
-It should contain the code for upgrading and downgrading db table based on the changes you have made in the model. You will probably get code styles warnings in this file. Fixed them, if you can.
-Next, run the following command:
-
-```bash
-make up-schema
-```
-
-This will upgrade your db table. To verify that everything works correctly, downgrade alembic version by running the following commands (downgrades by one version):
-
-```bash
-make down-schema
-```
-
-If this works accordingly, run the following command again to upgrade to the latest alembic version:
-
-```bash
-make up-schema
-```
-
-## Common commands
+## Development
 
 | Command | Purpose |
 | --- | --- |
@@ -64,24 +67,35 @@ make up-schema
 | `make lint` | Run Ruff lint checks |
 | `make format` | Apply Ruff formatting |
 | `make typecheck` | Run Pyright in strict mode |
-| `make export-openapi` | Export the OpenAPI document to `backend/openapi.json` (deterministic) |
-| `make fe-generate-types` | Regenerate the committed frontend API types from `backend/openapi.json` |
-| `make generate-api-types` | Export the OpenAPI document, then regenerate the frontend types from it |
 | `make fe-dev` | Run the frontend dev server on http://localhost:5173 |
 | `make fe-test` | Run the frontend test suite (Vitest) |
 | `make fe-lint` | Run ESLint |
 | `make fe-typecheck` | Run the TypeScript compiler in check-only mode |
 | `make build` | Build the production frontend bundle |
-| `make db-up` | Db up |
-| `make db-down` | Db down |
-| `make db-reset` | Db down and up |
-| `make up-schema` | Upgrade schema to head |
-| `make down-schema` | Downgrade schema by one version |
-| `make prod-up` | Build and start the private production stack |
-| `make prod-down` | Stop the private production stack |
+| `make db-up` | Start the development PostgreSQL container |
+| `make db-down` | Stop the development PostgreSQL container |
+| `make db-reset` | Recreate the development database from scratch (destructive) |
+| `make up-schema` | Apply migrations up to the latest revision |
+| `make down-schema` | Roll back the most recent migration |
 
-The API health check is served at `GET /api/v1/health`. In development the frontend proxies
-`/api/v1` to the backend on port 8000.
+### Writing a migration
+
+After changing a SQLAlchemy model, generate and apply a migration from `backend/`:
+
+```bash
+cd backend
+poetry run alembic -c alembic/alembic.ini revision -m "<describe the change>" --autogenerate
+```
+
+Review the generated file in `backend/alembic/versions/` — autogenerate doesn't always infer
+the change correctly, and Ruff may flag style issues worth fixing by hand. Then apply and
+sanity-check both directions:
+
+```bash
+make up-schema    # apply the new migration
+make down-schema  # roll it back to confirm downgrade works
+make up-schema    # re-apply
+```
 
 ### Frontend API types
 
@@ -93,15 +107,20 @@ succeeds without a running backend. After changing any endpoint or schema, regen
 make generate-api-types
 ```
 
-CI (added in a later ticket) runs the same command and fails the build if it produces an
-uncommitted diff, e.g.:
+If you add CI later, run the same command and fail the build on an uncommitted diff, e.g.:
 
 ```bash
 make generate-api-types
 git diff --exit-code frontend/src/api/schema.d.ts
 ```
 
-## Production stack
+| Command | Purpose |
+| --- | --- |
+| `make export-openapi` | Export the OpenAPI document to `backend/openapi.json` (deterministic) |
+| `make fe-generate-types` | Regenerate the committed frontend API types from `backend/openapi.json` |
+| `make generate-api-types` | Export the OpenAPI document, then regenerate the frontend types from it |
+
+## Production deployment
 
 The production image (`Dockerfile`, repo root) builds the frontend and installs production-only
 Python dependencies in separate stages, then serves the built frontend and the API from one
@@ -143,3 +162,16 @@ docker compose -f deploy/docker-compose.yml exec -T db psql -U radarsmith radars
 Backend settings load from `backend/settings.env` (see
 [backend/settings.env.template](backend/settings.env.template)). Variables use the
 `rs_api_` prefix, e.g. `rs_api_db_url`.
+
+## Documentation
+
+- [doc/architecture/product-spec.md](doc/architecture/product-spec.md) — problem, users, and
+  MVP scope.
+- [doc/architecture/architecture.md](doc/architecture/architecture.md) — domain model, system
+  design, and tech stack.
+- [doc/adr/](doc/adr/) — architecture decision records.
+- [doc/research/](doc/research/) — primary-source research behind key design choices.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
