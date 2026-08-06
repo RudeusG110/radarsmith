@@ -21,11 +21,14 @@
 
     /*
      * Workspace layout tokens (View/Edit radar + companion panel grids). Tune these — not the
-     * grids themselves — when reworking responsive behavior later. `--workspace-breakpoint` is
-     * documentation only (custom properties can't be used inside @media conditions); keep the
-     * literal 860px in the grids' @media rules and in useMediaQuery's NARROW_QUERY in sync with it.
+     * grids themselves — when reworking responsive behavior later. These are documentation
+     * only (custom properties can't be used inside @media conditions); keep the literal
+     * breakpoints below in sync with the ones in the grids' @media rules and in
+     * RadarWorkspace's EDIT_NARROW_QUERY. Edit's is wider than View's because its blip-table
+     * column (--workspace-table-col) is wider than View's side column (--workspace-side-col).
      */
     --workspace-breakpoint: 860px;
+    --workspace-edit-breakpoint: 1080px;
     --workspace-radar-col: minmax(0, 1fr);
     --workspace-side-col: minmax(0, 420px);
     /* Wider than --workspace-side-col: Edit's 4-column blip table needs more room than View's text panel. */
@@ -259,13 +262,23 @@ td {
 }
 
 @media (max-width: 860px) {
+    .view-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
 
-    .view-grid,
+    .side-panel {
+        max-height: none;
+    }
+}
+
+@media (max-width: 1080px) {
+
+    /* Matches EDIT_NARROW_QUERY: below this width, RadarWorkspace renders Tabs instead of
+       edit-grid, but this still guards the brief frame before that DOM swap commits. */
     .edit-grid {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .side-panel,
     .blips-panel {
         max-height: none;
     }
