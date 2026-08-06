@@ -55,7 +55,7 @@ backend/            Python FastAPI application (package: app)
 frontend/           React + TypeScript + Vite app
 deploy/             production Docker Compose stack
 dev/                development Docker Compose stack (PostgreSQL)
-doc/                architecture, product spec, decision records, research
+doc/                architecture, product spec
 ```
 
 ## Development
@@ -169,8 +169,6 @@ Backend settings load from `backend/settings.env` (see
   MVP scope.
 - [doc/architecture/architecture.md](doc/architecture/architecture.md) — domain model, system
   design, and tech stack.
-- [doc/adr/](doc/adr/) — architecture decision records.
-- [doc/research/](doc/research/) — primary-source research behind key design choices.
 
 ## License
 
