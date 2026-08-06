@@ -77,6 +77,8 @@ make up-schema
 | `make db-reset` | Db down and up |
 | `make up-schema` | Upgrade schema to head |
 | `make down-schema` | Downgrade schema by one version |
+| `make prod-up` | Build and start the private production stack |
+| `make prod-down` | Stop the private production stack |
 
 The API health check is served at `GET /api/v1/health`. In development the frontend proxies
 `/api/v1` to the backend on port 8000.
@@ -97,6 +99,43 @@ uncommitted diff, e.g.:
 ```bash
 make generate-api-types
 git diff --exit-code frontend/src/api/schema.d.ts
+```
+
+## Production stack
+
+The production image (`Dockerfile`, repo root) builds the frontend and installs production-only
+Python dependencies in separate stages, then serves the built frontend and the API from one
+non-root container on one port, with a container health check. `deploy/docker-compose.yml` runs
+that image alongside PostgreSQL, running migrations as a one-shot job before the app starts.
+Everything binds to `127.0.0.1`; there is no TLS or reverse proxy in the MVP.
+
+Start a clean, healthy stack (builds the image, runs migrations, then starts the app):
+
+```bash
+make prod-up
+```
+
+On first run this also creates `deploy/.env` from `deploy/.env.template` with a randomly
+generated PostgreSQL password (see `deploy/init-env.sh`); later runs leave an existing
+`deploy/.env` untouched, so manual edits are preserved. PostgreSQL only applies
+`POSTGRES_PASSWORD` the first time it initializes its data volume: if you delete `deploy/.env`
+to regenerate the password after the named volume already exists, the database's actual role
+password will not change and the app will fail to authenticate. Reset the volume (`docker
+compose -f deploy/docker-compose.yml down -v`) or edit the password with `ALTER ROLE` instead.
+
+The app is then reachable at http://127.0.0.1:8080 (UI and `/api/v1/*` under one origin).
+`docker compose -f deploy/docker-compose.yml ps` shows container health; `make prod-down` sends
+`SIGTERM` and stops the stack while keeping the named PostgreSQL volume, so restarting with
+`make prod-up` retains prior edits.
+
+Back up or restore the database through the running `db` container:
+
+```bash
+# Backup
+docker compose -f deploy/docker-compose.yml exec db pg_dump -U radarsmith radarsmith > backup.sql
+
+# Restore (into an empty database)
+docker compose -f deploy/docker-compose.yml exec -T db psql -U radarsmith radarsmith < backup.sql
 ```
 
 ## Configuration

@@ -1,9 +1,19 @@
 .PHONY: setup dev test lint format typecheck build db-up db-down db-reset export-openapi \
-	fe-setup fe-dev fe-test fe-lint fe-typecheck fe-build fe-generate-types generate-api-types
+	fe-setup fe-dev fe-test fe-lint fe-typecheck fe-build fe-generate-types generate-api-types \
+	prod-up prod-down
 
+# All images here (postgres/python/node, and our own locally-built ones) are public, so no
+# registry auth is ever needed. Pointing Docker at this repo-committed, empty CLI config avoids
+# "error listing credentials" from a broken or per-session credsStore (e.g. some devcontainer
+# tooling injects one), instead of depending on whatever is in the host's ~/.docker/config.json.
+export DOCKER_CONFIG := $(CURDIR)/.docker-config
 
 COMPOSE_FILE := dev/docker-compose.yml
 COMPOSE := docker compose -f $(COMPOSE_FILE)
+
+PROD_COMPOSE_FILE := deploy/docker-compose.yml
+PROD_ENV_FILE := deploy/.env
+PROD_COMPOSE := docker compose -f $(PROD_COMPOSE_FILE) --env-file $(PROD_ENV_FILE)
 
 # --- Setup ---
 setup:
@@ -77,3 +87,14 @@ generate-api-types: export-openapi fe-generate-types
 
 # --- Combined ---
 build: fe-build
+
+# --- Production stack (see deploy/docker-compose.yml) ---
+# File target: only regenerates deploy/.env when it doesn't already exist.
+$(PROD_ENV_FILE):
+	./deploy/init-env.sh
+
+prod-up: $(PROD_ENV_FILE)
+	$(PROD_COMPOSE) up -d --build
+
+prod-down:
+	$(PROD_COMPOSE) down

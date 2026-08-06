@@ -8,6 +8,8 @@ class AppSettings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     db_url: str = ""
+    # Set only in the production image; empty disables built-frontend serving.
+    static_dir: str = ""
 
     def __init__(self, env_file: str | None = None, **kwargs: Any) -> None:  # noqa: ANN401
         """Initialize the AppSettings instance with optional environment file and additional keyword arguments."""

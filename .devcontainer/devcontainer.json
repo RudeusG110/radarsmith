@@ -18,6 +18,19 @@
 	"postCreateCommand": "dev/init_dev.sh",
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
+	// Docker socket mount also lets VS Code auto-forward sibling containers' internal
+	// ports (e.g. the prod app container's EXPOSE 8000); label them to avoid confusion
+	// with the actual host-published prod port (8080, see deploy/docker-compose.yml).
+	"portsAttributes": {
+		"8000": {
+			"label": "FastAPI (make dev, or prod app container's internal port)",
+			"onAutoForward": "silent"
+		},
+		"8080": {
+			"label": "radarsmith prod stack (make prod-up)",
+			"onAutoForward": "notify"
+		}
+	},
 	// Uncomment the next line to run commands after the container is created - for example installing curl.
 	// "postCreateCommand": ""
 	// Uncomment when using a ptrace-based debugger like C++, Go, and Rust

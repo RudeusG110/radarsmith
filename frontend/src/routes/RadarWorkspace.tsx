@@ -20,7 +20,9 @@ type OpenDialog = { kind: "add" } | { kind: "edit"; blip: Blip } | { kind: "dele
 type WorkspaceTab = "radar" | "blips";
 type ViewSelectionState = { kind: "blip"; blipId: string } | { kind: "quadrant"; quadrantId: string } | null;
 
-const NARROW_QUERY = "(max-width: 860px)";
+// Wider than .view-grid's 860px: edit-grid's blip-table column (640px) is wider than
+// view-grid's side panel (420px), so edit needs more width before the radar gets cramped.
+const EDIT_NARROW_QUERY = "(max-width: 1080px)";
 const WORKSPACE_TABS: TabItem[] = [
     { id: "radar", label: "Radar" },
     { id: "blips", label: "Blips" },
@@ -37,7 +39,7 @@ export function RadarWorkspace() {
     const [activeTab, setActiveTab] = useState<WorkspaceTab>("radar");
     const [mode, setMode] = useState<WorkspaceMode>("view");
     const [viewSelection, setViewSelection] = useState<ViewSelectionState>(null);
-    const isNarrow = useMediaQuery(NARROW_QUERY);
+    const isNarrow = useMediaQuery(EDIT_NARROW_QUERY);
     const markerRefs = useRef(new Map<string, SVGGElement>());
     const rowRefs = useRef(new Map<string, HTMLButtonElement>());
     const { setChrome } = useWorkspaceChrome();

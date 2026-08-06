@@ -82,12 +82,14 @@ export function NewRadarForm({ onCreated, onCancel }: NewRadarFormProps) {
                         {submitError}
                     </p>
                 )}
-                <button type="submit" className="btn primary" disabled={submitting}>
-                    {submitting ? "Creating…" : "Create radar"}
-                </button>
-                <button type="button" className="btn" onClick={onCancel} disabled={submitting}>
-                    Cancel
-                </button>
+                <div className="form-actions">
+                    <button type="submit" className="btn primary" disabled={submitting}>
+                        {submitting ? "Creating…" : "Create radar"}
+                    </button>
+                    <button type="button" className="btn" onClick={onCancel} disabled={submitting}>
+                        Cancel
+                    </button>
+                </div>
             </form>
         </Dialog>
     );
