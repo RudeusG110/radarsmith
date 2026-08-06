@@ -95,6 +95,7 @@ $(PROD_ENV_FILE):
 
 prod-up: $(PROD_ENV_FILE)
 	$(PROD_COMPOSE) up -d --build
+	@echo "RadarSmith is running at http://127.0.0.1:8080"
 
 prod-down:
 	$(PROD_COMPOSE) down
