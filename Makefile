@@ -2,6 +2,11 @@
 	fe-setup fe-dev fe-test fe-lint fe-typecheck fe-build fe-generate-types generate-api-types \
 	prod-up prod-down
 
+# All images here (postgres/python/node, and our own locally-built ones) are public, so no
+# registry auth is ever needed. Pointing Docker at this repo-committed, empty CLI config avoids
+# "error listing credentials" from a broken or per-session credsStore (e.g. some devcontainer
+# tooling injects one), instead of depending on whatever is in the host's ~/.docker/config.json.
+export DOCKER_CONFIG := $(CURDIR)/.docker-config
 
 COMPOSE_FILE := dev/docker-compose.yml
 COMPOSE := docker compose -f $(COMPOSE_FILE)
