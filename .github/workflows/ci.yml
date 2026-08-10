@@ -5,7 +5,12 @@ on:
   push:
     branches: [main]
 
-# Default to read-only; no job needs write access and none of them use repository secrets.
+# Cancel superseded runs on the same ref to save minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Default to read-only; only the coverage-report job (PR-only) elevates further, scoped to itself.
 permissions:
   contents: read
 
@@ -25,6 +30,10 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: poetry
+      - uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
       - run: poetry install
       - run: poetry run ruff check .
 
@@ -38,6 +47,10 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: poetry
+      - uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
       - run: poetry install
       - run: poetry run pyright
 
@@ -66,12 +79,69 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: poetry
+      - uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
       - run: poetry install
       # Test config files target the devcontainer's docker-bridge address (172.17.0.1) for
       # local dev; the runner reaches the service container via localhost instead. Patched
       # here only, never committed.
       - run: sed -i 's/172.17.0.1/localhost/' backend/tests/config/*.env
-      - run: poetry run pytest
+      - run: >-
+          poetry run pytest
+          --cov=backend/app
+          --cov-report=term-missing
+          --cov-report=xml:coverage.xml
+          --junitxml=report.xml
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            report.xml
+            coverage.xml
+
+  # PR-only: publishes the pytest/coverage results generated above as a check + PR comment.
+  coverage-report:
+    name: Backend / coverage report
+    needs: backend-test
+    if: always() && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    # Only this job writes to the PR/checks API, and only for pull_request events.
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v4
+        with:
+          name: test-reports
+
+      - name: Publish test results
+        uses: dorny/test-reporter@31a54ee7ebcacc03a09ea97a7e5465a47b84aea5 # v1.9.1
+        with:
+          name: pytest
+          path: report.xml
+          reporter: java-junit
+
+      - name: Coverage summary
+        uses: irongut/CodeCoverageSummary@51cc3a756ddcd398d447c044c02cb6aa83fdae95 # v1.3.0
+        with:
+          filename: coverage.xml
+          format: markdown
+          output: both
+
+      - name: Add coverage to run summary
+        run: cat code-coverage-results.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment coverage on PR
+        uses: marocchino/sticky-pull-request-comment@331f8f5b4215f0445d3c07b4967662a32a2d3e31 # v2.9.0
+        with:
+          header: coverage
+          recreate: true
+          path: code-coverage-results.md
 
   frontend-lint:
     name: Frontend / lint
@@ -157,6 +227,10 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: poetry
+      - uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
       - run: poetry install
       - run: echo "rs_api_db_url=postgresql+psycopg://radarsmith:devpass@localhost:5432/radarsmith" > backend/settings.env
       - run: make up-schema
@@ -173,6 +247,10 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: poetry
+      - uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
