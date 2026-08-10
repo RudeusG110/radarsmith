@@ -9,6 +9,8 @@ radar and its blips: open a radar, edit it in the browser, and see the result im
 > meant to be run privately (e.g. behind a VPN or on localhost) for one trusted author, not
 > exposed directly to the public internet.
 
+![RadarSmith radar view](doc/images/radar-view.png)
+
 ## Features
 
 - **Radar library** — list, create, rename, and delete radars from the browser.
