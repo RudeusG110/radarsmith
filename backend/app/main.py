@@ -25,7 +25,7 @@ def _mount_frontend(app: FastAPI, static_dir: str) -> None:
     app.mount("/assets", StaticFiles(directory=f"{static_dir}/assets"), name="assets")
 
     @app.get("/{full_path:path}")
-    async def spa_fallback(full_path: str) -> FileResponse:
+    async def spa_fallback(full_path: str) -> FileResponse:  # pyright: ignore[reportUnusedFunction] -- registered as a route handler
         # Unmatched /api/ paths stay 404s; every other path is a client-side route.
         if full_path.startswith("api/"):
             raise HTTPException(status_code=404)
