@@ -10,6 +10,7 @@ radar and its blips: open a radar, edit it in the browser, and see the result im
 > exposed directly to the public internet.
 
 ![RadarSmith radar view](doc/images/radar-view.png)
+![RadarSmith edit view](doc/images/edit-view.png)
 
 ## Features
 
