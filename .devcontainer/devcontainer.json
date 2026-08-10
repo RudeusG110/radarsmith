@@ -16,6 +16,10 @@
 		}
 	},
 	"postCreateCommand": "dev/init_dev.sh",
+	// The host's docker.sock can be recreated (different perms/owning GID) whenever the
+	// host Docker daemon restarts, which the one-time postCreateCommand chmod won't catch.
+	// Re-apply on every container start so `make db-up`/`prod-up` keep working.
+	"postStartCommand": "sudo chmod 666 /var/run/docker.sock 2>/dev/null || true",
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 	// Docker socket mount also lets VS Code auto-forward sibling containers' internal
