@@ -89,8 +89,7 @@ flowchart LR
 
 ### Backend layout
 
-The backend follows the same layering as the author's other FastAPI projects
-(report-craft, soc-cidb):
+The backend is organised in these layers:
 
 | Layer | Location | Responsibility |
 | --- | --- | --- |
@@ -104,9 +103,9 @@ Single-step CRUD methods commit their own change. A worker that spans several wr
 flushes through the CRUD layer and commits once, using `try: commit` /
 `finally: rollback` so a failure never leaves partial state in the session.
 
-Errors deliberately differ from report-craft: domain exceptions live in
-`app/domain/exceptions.py` and `app/api/error_handlers.py` maps them to one envelope,
-`{"error": {"code", "message"}}`, which the frontend client depends on.
+Domain exceptions live in `app/domain/exceptions.py` and `app/api/error_handlers.py` maps
+them to one envelope, `{"error": {"code", "message"}}`, which the frontend client depends
+on.
 
 The bundled radar is generated from data already held by the project and committed as a
 versioned preload artifact. A data migration inserts it; migration history, rather than

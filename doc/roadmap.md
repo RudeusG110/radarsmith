@@ -8,15 +8,15 @@ Sizes: **S** ≈ a day or less, **M** ≈ a few days, **L** ≈ a week or more.
 
 ## Stage 0 — Finish the MVP, align conventions, polish
 
-### 0.1 refactor(backend): align layering with report-craft conventions — M
+### 0.1 refactor(backend): align layering with conventions — M
 
-Move the backend to the same layout and naming as report-craft. No behavior change.
+Move the backend to the target layout and naming. No behavior change.
 
 - [ ] `app/api/endpoints/` → `app/api/api_v1/endpoints/`; `app/api/api_router.py` → `app/api/api_v1/api.py`
 - [ ] `app/api/services/*_service.py` (`RadarService`, `BlipService`) → `app/api/workers/radar.py`, `app/api/workers/blip.py` (`RadarApi`, `BlipApi`)
 - [ ] `app/api/api_v1/path_params.py` with `RadarId` / `BlipId` annotated aliases used by the endpoints
-- [ ] Multi-step writes in workers use `try: commit` / `finally: rollback` (as in report-craft `ReportApi.unpublish`); single-step CRUD methods may keep committing
-- [ ] Exceptions stay in `app/domain/exceptions.py` and the shared error envelope (`{error: {code, message}}`) is unchanged — intentional deviation from report-craft's `core/errors.py` / `{"detail": ...}`
+- [ ] Multi-step writes in workers use `try: commit` / `finally: rollback`; single-step CRUD methods may keep committing
+- [ ] Exceptions stay in `app/domain/exceptions.py` and the shared error envelope (`{error: {code, message}}`) is unchanged
 - [ ] OpenAPI output unchanged (types-freshness check passes), all tests green, `architecture.md` updated
 
 ### 0.2 fix(api): return the error envelope for unhandled errors — S
