@@ -105,6 +105,21 @@ def test_integrity_error_maps_to_conflict_without_database_details(context: AppC
     assert "uq_radar_quadrant" in logger.warning.call_args.args[0]
 
 
+def test_unknown_api_path_uses_shared_envelope(client: TestClient, context: AppContext) -> None:
+    response = client.get("/api/v1/does-not-exist")
+
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {"error": {"code": "not_found", "message": "Not Found"}}
+
+
+def test_method_not_allowed_uses_shared_envelope(client: TestClient, context: AppContext) -> None:
+    response = client.put("/api/v1/radars")
+
+    assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
+    assert response.json() == {"error": {"code": "method_not_allowed", "message": "Method Not Allowed"}}
+    assert "allow" in response.headers
+
+
 def test_openapi_declares_shared_error_envelope() -> None:
     document = main_app.openapi()
 

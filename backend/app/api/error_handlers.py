@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from http import HTTPStatus
 from typing import cast
 
@@ -6,6 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic_core import ErrorDetails
 from sqlalchemy.exc import IntegrityError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.domain.exceptions import ConflictError, NotFoundError
@@ -18,10 +20,10 @@ INTERNAL_ERROR_MESSAGE = "An unexpected error occurred."
 INTEGRITY_ERROR_MESSAGE = "The request conflicts with existing data."
 
 
-def _envelope(status_code: int, code: str, message: str) -> JSONResponse:
+def _envelope(status_code: int, code: str, message: str, headers: Mapping[str, str] | None = None) -> JSONResponse:
     """Build a JSON response wrapping the shared error envelope."""
     body = ErrorOut(error=ErrorDetail(code=code, message=message))
-    return JSONResponse(status_code=status_code, content=body.model_dump())
+    return JSONResponse(status_code=status_code, content=body.model_dump(), headers=headers)
 
 
 def _format_validation_errors(exc: RequestValidationError) -> str:
@@ -54,6 +56,14 @@ async def _handle_validation_error(_: Request, exc: Exception) -> JSONResponse:
     """Return the shared error envelope for request validation failures."""
     message = _format_validation_errors(cast(RequestValidationError, exc))
     return _envelope(HTTPStatus.UNPROCESSABLE_ENTITY, "validation_error", message)
+
+
+async def _handle_http_exception(_: Request, exc: Exception) -> JSONResponse:
+    """Return the shared error envelope for framework HTTP errors such as unknown routes."""
+    http_exc = cast(StarletteHTTPException, exc)
+    status = HTTPStatus(http_exc.status_code)
+    message = str(http_exc.detail) if http_exc.detail else status.phrase
+    return _envelope(status, status.name.lower(), message, headers=http_exc.headers)
 
 
 class UnhandledErrorMiddleware:
@@ -95,4 +105,5 @@ def register_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(ConflictError, _handle_conflict)
     app.add_exception_handler(IntegrityError, _handle_integrity_error)
     app.add_exception_handler(RequestValidationError, _handle_validation_error)
+    app.add_exception_handler(StarletteHTTPException, _handle_http_exception)
     app.add_middleware(UnhandledErrorMiddleware)
