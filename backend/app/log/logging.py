@@ -9,7 +9,7 @@ CTX_FIELDS = ["tenant"]
 
 
 class JSONFormatter(Formatter):
-    def format(self, record: LogRecord) -> str:  # noqa: PLR6301
+    def format(self, record: LogRecord) -> str:
         log_record: dict[str, object] = {
             "timestamp": record.created,
             "level": record.levelname,
@@ -23,6 +23,9 @@ class JSONFormatter(Formatter):
         for field in CTX_FIELDS:
             if hasattr(record, field):
                 log_record[field] = getattr(record, field)
+
+        if record.exc_info:
+            log_record["exc_info"] = self.formatException(record.exc_info)
 
         return json.dumps(log_record)
 
