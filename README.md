@@ -251,6 +251,7 @@ Keep the tag in sync with the `version` field in [pyproject.toml](pyproject.toml
   MVP scope.
 - [doc/architecture/architecture.md](doc/architecture/architecture.md) — domain model, system
   design, and tech stack.
+- [doc/roadmap.md](doc/roadmap.md) — staged improvement plan and issue-ready tickets.
 
 ## License
 
