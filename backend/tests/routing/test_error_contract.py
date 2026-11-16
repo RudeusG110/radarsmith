@@ -1,7 +1,7 @@
 from http import HTTPStatus
 from typing import Annotated, Any, cast
-from unittest.mock import patch
 
+import pytest
 from app.api.error_handlers import register_exception_handlers
 from app.api.workers.radar import RadarApi
 from app.context.app_context import AppContext, get_app_context
@@ -62,7 +62,7 @@ def test_conflict_uses_shared_envelope() -> None:
     assert body == {"error": {"code": "conflict", "message": "Radar name already exists."}}
 
 
-def test_unhandled_error_returns_internal_error_envelope() -> None:
+def test_unhandled_error_returns_internal_error_envelope(caplog: pytest.LogCaptureFixture) -> None:
     app = FastAPI()
     register_exception_handlers(app)
 
@@ -70,18 +70,22 @@ def test_unhandled_error_returns_internal_error_envelope() -> None:
     def _boom() -> None:  # pyright: ignore[reportUnusedFunction] -- registered as a route handler
         raise RuntimeError(f"connection failed: {SENSITIVE_DETAIL}")
 
-    with patch("app.api.error_handlers.logger") as logger:
-        response = TestClient(app).get("/boom")
+    response = TestClient(app).get("/boom")
 
     assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
     body = cast(dict[str, Any], response.json())
     assert body == {"error": {"code": "internal_error", "message": "An unexpected error occurred."}}
     assert SENSITIVE_DETAIL not in response.text
-    # `exception` logs at ERROR with the active stack trace attached.
-    logger.exception.assert_called_once_with("Unhandled error on GET /boom")
+
+    errors = [record for record in caplog.records if record.levelname == "ERROR"]
+    assert [record.getMessage() for record in errors] == ["Unhandled error on GET /boom"]
+    assert errors[0].exc_info is not None
+    assert SENSITIVE_DETAIL in caplog.text  # the stack trace is logged, only hidden from the client
 
 
-def test_integrity_error_maps_to_conflict_without_database_details(context: AppContext, dependencies: Dependencies) -> None:
+def test_integrity_error_maps_to_conflict_without_database_details(
+    context: AppContext, dependencies: Dependencies, caplog: pytest.LogCaptureFixture
+) -> None:
     app = FastAPI()
     register_exception_handlers(app)
     app.dependency_overrides[get_settings] = dependencies.settings_factory
@@ -94,15 +98,14 @@ def test_integrity_error_maps_to_conflict_without_database_details(context: AppC
         # Position 1 is already taken by the radar's default structure.
         QuadrantDb(route_context).create(radar.id, QuadrantPost(name=QuadrantType.TOOLS, position=1))
 
-    with patch("app.api.error_handlers.logger") as logger:
-        response = TestClient(app).post("/duplicate-quadrant")
+    response = TestClient(app).post("/duplicate-quadrant")
 
     assert response.status_code == HTTPStatus.CONFLICT
     body = cast(dict[str, Any], response.json())
     assert body == {"error": {"code": "conflict", "message": "The request conflicts with existing data."}}
     assert "uq_radar_quadrant" not in response.text
-    logger.warning.assert_called_once()
-    assert "uq_radar_quadrant" in logger.warning.call_args.args[0]
+    warnings = [record.getMessage() for record in caplog.records if record.levelname == "WARNING"]
+    assert any("uq_radar_quadrant" in message for message in warnings)
 
 
 def test_unknown_api_path_uses_shared_envelope(client: TestClient, context: AppContext) -> None:

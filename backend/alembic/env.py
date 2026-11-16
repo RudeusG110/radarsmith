@@ -9,9 +9,10 @@ from sqlalchemy import create_engine
 # access to the values within the .ini file in use.
 config = context.config
 
-# Interpret the config file for Python logging.
+# Interpret the config file for Python logging. Keep loggers that already exist (the app's
+# own logger is created on import) enabled, so running migrations in-process doesn't mute them.
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 # Model metadata for 'autogenerate' support. Referencing the models module here
 # both imports the table definitions and exposes the metadata they register on.
