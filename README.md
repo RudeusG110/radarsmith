@@ -65,7 +65,7 @@ is served at `GET /api/v1/health`.
 
 ```
 backend/            Python FastAPI application (package: app)
-  app/              application code (api, context, database, models, schemas, log)
+  app/              application code (api/api_v1 endpoints, api/workers, crud, domain, models, schemas)
   alembic/          database migrations
   tests/            backend tests
 frontend/           React + TypeScript + Vite app
