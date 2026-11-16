@@ -13,7 +13,6 @@ class ConflictError(DomainError):
         super().__init__(message)
 
 
-
 class RadarNotFoundError(NotFoundError):
     """Raised when a radar cannot be found by its identifier."""
 
