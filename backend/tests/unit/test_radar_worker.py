@@ -23,8 +23,7 @@ def test_create_radar_rolls_back_when_structure_creation_fails(context: AppConte
         with pytest.raises(RuntimeError):
             RadarApi(context).create_radar(RadarPost(name="Doomed Radar"))
 
-    context.db.rollback()
-
+    # No explicit rollback here: the worker must leave the session clean by itself.
     assert _count(context, Radar) == radar_count_before
     assert _count(context, RadarQuadrant) == quadrant_count_before
     assert _count(context, RadarRing) == ring_count_before
