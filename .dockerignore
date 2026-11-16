@@ -9,6 +9,7 @@ dev
 # Backend
 backend/tests
 backend/settings.env
+backend/log_settings.env
 **/__pycache__
 **/*.pyc
 .pytest_cache

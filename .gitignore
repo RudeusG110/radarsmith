@@ -1,5 +1,6 @@
 .venv
 settings.env
+log_settings.env
 dev/db.env
 deploy/.env
 __pycache__

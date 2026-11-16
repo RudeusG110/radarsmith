@@ -214,6 +214,11 @@ Backend settings load from `backend/settings.env` (see
 [backend/settings.env.template](backend/settings.env.template)). Variables use the
 `rs_api_` prefix, e.g. `rs_api_db_url`.
 
+Logging settings load from `backend/log_settings.env` (see
+[backend/log_settings.env.template](backend/log_settings.env.template)) or the
+environment. Variables use the `rs_log_` prefix, e.g. `rs_log_level=INFO` or
+`rs_log_type=JSON`. In the production stack, set them in `deploy/.env`.
+
 ## Supported versions
 
 - **PostgreSQL 18** — pinned in [dev/docker-compose.yml](dev/docker-compose.yml),

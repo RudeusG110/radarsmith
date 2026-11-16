@@ -16,8 +16,35 @@ type ErrorOut = components["schemas"]["ErrorOut"];
 
 interface RawResult<Data> {
     data?: Data;
-    error?: ErrorOut;
+    // Declared as `ErrorOut`, but a crash or a proxy in front of the API can return any body, or none.
+    error?: unknown;
     response: Response;
+}
+
+function isErrorEnvelope(body: unknown): body is ErrorOut {
+    if (typeof body !== "object" || body === null || !("error" in body)) {
+        return false;
+    }
+    const { error } = body;
+    return (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        "message" in error &&
+        typeof error.code === "string" &&
+        typeof error.message === "string"
+    );
+}
+
+function toApiError(body: unknown, status: number): ApiError {
+    if (isErrorEnvelope(body)) {
+        return new ApiError(body.error.code, body.error.message, status);
+    }
+    const message =
+        status >= 500
+            ? `The server ran into a problem (HTTP ${status}). Please try again.`
+            : `The request failed (HTTP ${status}).`;
+    return new ApiError("unexpected_response", message, status);
 }
 
 /** Normalizes an openapi-fetch call into typed data, throwing `ApiError`/`NetworkError` instead. */
@@ -29,13 +56,8 @@ export async function unwrap<Data>(call: Promise<RawResult<Data>>): Promise<Data
         throw new NetworkError(cause);
     }
 
-    if (result.error !== undefined) {
-        throw new ApiError(result.error.error.code, result.error.error.message, result.response.status);
-    }
-
-    if (result.data === undefined && !result.response.ok) {
-        // Genuinely unexpected: a failed response with neither a parsed error body nor data.
-        throw new Error("Unexpected response: no data or error returned.");
+    if (!result.response.ok) {
+        throw toApiError(result.error, result.response.status);
     }
 
     return result.data as Data;

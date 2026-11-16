@@ -1,14 +1,23 @@
 from http import HTTPStatus
-from typing import Any, cast
+from typing import Annotated, Any, cast
 
+import pytest
 from app.api.error_handlers import register_exception_handlers
-from app.context.app_context import AppContext
+from app.api.workers.radar import RadarApi
+from app.context.app_context import AppContext, get_app_context
+from app.context.settings_context import get_settings
+from app.crud.quadrant import QuadrantDb
+from app.domain.enums import QuadrantType
 from app.domain.exceptions import ConflictError
 from app.main import app as main_app
-from fastapi import FastAPI
+from app.schemas.quadrant import QuadrantPost
+from app.schemas.radar import RadarPost
+from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
+from lib.context import Dependencies
 
 MISSING_ID = "c22e9817-d6ff-472a-b5a4-0a521366bb21"
+SENSITIVE_DETAIL = "db-host.internal:5432"
 
 
 def test_not_found_uses_shared_envelope(client: TestClient, context: AppContext) -> None:
@@ -51,6 +60,67 @@ def test_conflict_uses_shared_envelope() -> None:
     assert response.status_code == HTTPStatus.CONFLICT
     body = cast(dict[str, Any], response.json())
     assert body == {"error": {"code": "conflict", "message": "Radar name already exists."}}
+
+
+def test_unhandled_error_returns_internal_error_envelope(caplog: pytest.LogCaptureFixture) -> None:
+    app = FastAPI()
+    register_exception_handlers(app)
+
+    @app.get("/boom")
+    def _boom() -> None:  # pyright: ignore[reportUnusedFunction] -- registered as a route handler
+        raise RuntimeError(f"connection failed: {SENSITIVE_DETAIL}")
+
+    response = TestClient(app).get("/boom")
+
+    assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
+    body = cast(dict[str, Any], response.json())
+    assert body == {"error": {"code": "internal_error", "message": "An unexpected error occurred."}}
+    assert SENSITIVE_DETAIL not in response.text
+
+    errors = [record for record in caplog.records if record.levelname == "ERROR"]
+    assert [record.getMessage() for record in errors] == ["Unhandled error on GET /boom"]
+    assert errors[0].exc_info is not None
+    assert SENSITIVE_DETAIL in caplog.text  # the stack trace is logged, only hidden from the client
+
+
+def test_integrity_error_maps_to_conflict_without_database_details(
+    context: AppContext, dependencies: Dependencies, caplog: pytest.LogCaptureFixture
+) -> None:
+    app = FastAPI()
+    register_exception_handlers(app)
+    app.dependency_overrides[get_settings] = dependencies.settings_factory
+
+    @app.post("/duplicate-quadrant")
+    def _duplicate_quadrant(  # pyright: ignore[reportUnusedFunction] -- registered as a route handler
+        route_context: Annotated[AppContext, Depends(get_app_context)],
+    ) -> None:
+        radar = RadarApi(route_context).create_radar(RadarPost(name="Integrity"))
+        # Position 1 is already taken by the radar's default structure.
+        QuadrantDb(route_context).create(radar.id, QuadrantPost(name=QuadrantType.TOOLS, position=1))
+
+    response = TestClient(app).post("/duplicate-quadrant")
+
+    assert response.status_code == HTTPStatus.CONFLICT
+    body = cast(dict[str, Any], response.json())
+    assert body == {"error": {"code": "conflict", "message": "The request conflicts with existing data."}}
+    assert "uq_radar_quadrant" not in response.text
+    warnings = [record.getMessage() for record in caplog.records if record.levelname == "WARNING"]
+    assert any("uq_radar_quadrant" in message for message in warnings)
+
+
+def test_unknown_api_path_uses_shared_envelope(client: TestClient, context: AppContext) -> None:
+    response = client.get("/api/v1/does-not-exist")
+
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {"error": {"code": "not_found", "message": "Not Found"}}
+
+
+def test_method_not_allowed_uses_shared_envelope(client: TestClient, context: AppContext) -> None:
+    response = client.put("/api/v1/radars")
+
+    assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
+    assert response.json() == {"error": {"code": "method_not_allowed", "message": "Method Not Allowed"}}
+    assert "allow" in response.headers
 
 
 def test_openapi_declares_shared_error_envelope() -> None:
