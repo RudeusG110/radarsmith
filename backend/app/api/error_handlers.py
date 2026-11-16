@@ -5,9 +5,15 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic_core import ErrorDetails
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.domain.exceptions import ConflictError, NotFoundError
+from app.log.logging import get_logger
 from app.schemas.error import ErrorDetail, ErrorOut
+
+logger = get_logger()
+
+INTERNAL_ERROR_MESSAGE = "An unexpected error occurred."
 
 
 def _envelope(status_code: int, code: str, message: str) -> JSONResponse:
@@ -42,8 +48,42 @@ async def _handle_validation_error(_: Request, exc: Exception) -> JSONResponse:
     return _envelope(HTTPStatus.UNPROCESSABLE_ENTITY, "validation_error", message)
 
 
+class UnhandledErrorMiddleware:
+    """Turn any exception no handler claimed into a logged 500 with the shared error envelope.
+
+    Unlike an ``Exception`` handler, which Starlette re-raises after responding, this keeps
+    the failure from reaching the server, so the stack trace is logged exactly once.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        response_started = False
+
+        async def send_tracking_start(message: Message) -> None:
+            nonlocal response_started
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+
+        try:
+            await self.app(scope, receive, send_tracking_start)
+        except Exception:
+            logger.exception(f"Unhandled error on {scope['method']} {scope['path']}")
+            if response_started:
+                raise
+            response = _envelope(HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", INTERNAL_ERROR_MESSAGE)
+            await response(scope, receive, send)
+
+
 def register_exception_handlers(app: FastAPI) -> None:
-    """Register global exception handlers for the FastAPI application."""
+    """Register global exception handlers and the unhandled-error fallback for the FastAPI application."""
     app.add_exception_handler(NotFoundError, _handle_not_found)
     app.add_exception_handler(ConflictError, _handle_conflict)
     app.add_exception_handler(RequestValidationError, _handle_validation_error)
+    app.add_middleware(UnhandledErrorMiddleware)

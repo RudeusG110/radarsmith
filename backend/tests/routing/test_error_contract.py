@@ -1,5 +1,6 @@
 from http import HTTPStatus
 from typing import Any, cast
+from unittest.mock import patch
 
 from app.api.error_handlers import register_exception_handlers
 from app.context.app_context import AppContext
@@ -9,6 +10,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 MISSING_ID = "c22e9817-d6ff-472a-b5a4-0a521366bb21"
+SENSITIVE_DETAIL = "db-host.internal:5432"
 
 
 def test_not_found_uses_shared_envelope(client: TestClient, context: AppContext) -> None:
@@ -51,6 +53,25 @@ def test_conflict_uses_shared_envelope() -> None:
     assert response.status_code == HTTPStatus.CONFLICT
     body = cast(dict[str, Any], response.json())
     assert body == {"error": {"code": "conflict", "message": "Radar name already exists."}}
+
+
+def test_unhandled_error_returns_internal_error_envelope() -> None:
+    app = FastAPI()
+    register_exception_handlers(app)
+
+    @app.get("/boom")
+    def _boom() -> None:  # pyright: ignore[reportUnusedFunction] -- registered as a route handler
+        raise RuntimeError(f"connection failed: {SENSITIVE_DETAIL}")
+
+    with patch("app.api.error_handlers.logger") as logger:
+        response = TestClient(app).get("/boom")
+
+    assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
+    body = cast(dict[str, Any], response.json())
+    assert body == {"error": {"code": "internal_error", "message": "An unexpected error occurred."}}
+    assert SENSITIVE_DETAIL not in response.text
+    # `exception` logs at ERROR with the active stack trace attached.
+    logger.exception.assert_called_once_with("Unhandled error on GET /boom")
 
 
 def test_openapi_declares_shared_error_envelope() -> None:
