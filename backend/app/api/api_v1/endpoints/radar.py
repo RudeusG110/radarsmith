@@ -13,7 +13,7 @@ router = APIRouter(prefix="/radars")
 
 
 @router.post("", status_code=HTTP_201_CREATED, description="Create a new radar", responses=BODY_ERROR_RESPONSES)
-def create_radar(context: Annotated[AppContext, Depends(get_app_context)], radar_post: RadarPost) -> RadarDetailOut:
+def create_radar(radar_post: RadarPost, context: Annotated[AppContext, Depends(get_app_context)]) -> RadarDetailOut:
     """Create a new radar."""
     service = RadarApi(context)
     radar = service.create_radar(radar_post)
