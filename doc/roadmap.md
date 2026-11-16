@@ -25,6 +25,7 @@ Unhandled exceptions return a plain-text 500, which breaks the error contract an
 frontend `unwrap()` fail while reading `result.error.error.code`.
 
 - [ ] Catch-all handler returns `500 {error: {code: "internal_error", message}}` and logs the stack trace
+- [ ] Framework `HTTPException`s (e.g. unknown `/api/...` path → `{"detail": "Not Found"}`) also use the envelope
 - [ ] `IntegrityError` maps to `409 conflict`
 - [ ] `unwrap()` tolerates non-envelope error bodies with a generic message
 - [ ] Tests cover both handlers and the client fallback
