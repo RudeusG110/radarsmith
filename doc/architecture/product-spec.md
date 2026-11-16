@@ -87,3 +87,4 @@ desktop and mobile. The primary end-to-end test is:
 
 - [architecture.md](./architecture.md) — domain model, system architecture, tech stack,
   and design decisions.
+- [../roadmap.md](../roadmap.md) — staged plan for the deferred upgrades above.

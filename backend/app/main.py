@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api.api_router import api_router
+from app.api.api_v1.api import api_router
 from app.api.error_handlers import register_exception_handlers
 from app.context.settings_context import get_settings
 

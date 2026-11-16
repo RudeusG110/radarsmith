@@ -1,7 +1,7 @@
 from collections.abc import Generator
 
 import pytest
-from app.api.api_router import api_router
+from app.api.api_v1.api import api_router
 from app.api.error_handlers import register_exception_handlers
 from app.context.app_context import AppContext, get_session_factory
 from app.context.settings_context import get_settings

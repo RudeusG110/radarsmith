@@ -1,5 +1,5 @@
 class DomainError(Exception):
-    """Base class for domain-level errors raised by the authoring services."""
+    """Base class for domain-level errors raised by the authoring workers."""
 
 
 class NotFoundError(DomainError):
@@ -11,7 +11,6 @@ class ConflictError(DomainError):
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
-
 
 
 class RadarNotFoundError(NotFoundError):

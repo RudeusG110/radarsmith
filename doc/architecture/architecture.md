@@ -58,7 +58,7 @@ erDiagram
 - **Blip** — a named item placed in exactly one quadrant and one ring of the same radar.
   Its description is required plain text.
 
-The service layer enforces cross-row invariants that foreign keys alone cannot express:
+The worker layer enforces cross-row invariants that foreign keys alone cannot express:
 a blip's quadrant and ring must belong to its radar, names must not be blank, and
 positions must be unique within a radar. Deleting a radar deletes its structure and
 blips. Blip deletion is explicit and confirmed by the UI.
@@ -73,7 +73,7 @@ as a log of every draft edit.
 ```mermaid
 flowchart LR
     Browser[React web app] -->|JSON over /api| API[FastAPI application]
-    API --> Core[Authoring services]
+    API --> Core[Authoring workers]
     Core --> Store[PostgreSQL repository]
     Migration[Schema and preload migrations] --> Store
     Bundle[Built React assets] --> API
@@ -83,9 +83,29 @@ flowchart LR
 | --- | --- |
 | **React web app** | Radar library, responsive workspace, forms and table, SVG rendering, and save/error feedback. |
 | **FastAPI application** | REST boundary, request validation, authoring use cases, and production static-asset serving. |
-| **Authoring services** | Create and mutate valid radars and blips without depending on HTTP or rendering concerns. |
+| **Authoring workers** | Create and mutate valid radars and blips without depending on HTTP or rendering concerns. |
 | **PostgreSQL repository** | Persist the current state and enforce relational constraints. |
 | **Migrations** | Evolve the schema and insert the bundled radar exactly once on a clean database. |
+
+### Backend layout
+
+The backend is organised in these layers:
+
+| Layer | Location | Responsibility |
+| --- | --- | --- |
+| Endpoints | `app/api/api_v1/endpoints/`, routed by `app/api/api_v1/api.py` | HTTP boundary: path/body parsing and response models only. Shared path parameters live in `app/api/api_v1/path_params.py`. |
+| Workers | `app/api/workers/` (`RadarApi`, `BlipApi`) | Use cases and cross-row invariants; own the transaction boundary for multi-step writes. |
+| CRUD | `app/crud/` (`RadarDb`, `BlipDb`, …) | SQLAlchemy queries for one table each. |
+| Domain | `app/domain/` | Exceptions, enums, defaults, and the preload artifact. |
+| Schemas / models | `app/schemas/`, `app/models/` | Pydantic DTOs and SQLAlchemy models. |
+
+Single-step CRUD methods commit their own change. A worker that spans several writes
+flushes through the CRUD layer and commits once, using `try: commit` /
+`finally: rollback` so a failure never leaves partial state in the session.
+
+Domain exceptions live in `app/domain/exceptions.py` and `app/api/error_handlers.py` maps
+them to one envelope, `{"error": {"code", "message"}}`, which the frontend client depends
+on.
 
 The bundled radar is generated from data already held by the project and committed as a
 versioned preload artifact. A data migration inserts it; migration history, rather than

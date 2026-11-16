@@ -65,7 +65,7 @@ is served at `GET /api/v1/health`.
 
 ```
 backend/            Python FastAPI application (package: app)
-  app/              application code (api, context, database, models, schemas, log)
+  app/              application code (api/api_v1 endpoints, api/workers, crud, domain, models, schemas)
   alembic/          database migrations
   tests/            backend tests
 frontend/           React + TypeScript + Vite app
@@ -251,6 +251,7 @@ Keep the tag in sync with the `version` field in [pyproject.toml](pyproject.toml
   MVP scope.
 - [doc/architecture/architecture.md](doc/architecture/architecture.md) — domain model, system
   design, and tech stack.
+- [doc/roadmap.md](doc/roadmap.md) — staged improvement plan and issue-ready tickets.
 
 ## License
 
