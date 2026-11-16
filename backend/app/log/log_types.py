@@ -14,6 +14,6 @@ class LogSettings(BaseSettings):
     log_level: str = "DEBUG"
     log_format: str = DEFAULT_LOG_FORMAT
     log_type: LogType = LogType.STREAM
-    log_application: str = "demo"
+    log_application: str = "radarsmith"
 
-    model_config = SettingsConfigDict(env_prefix="demo_", env_file="log_settings.env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_prefix="rs_", env_file="log_settings.env", env_file_encoding="utf-8")

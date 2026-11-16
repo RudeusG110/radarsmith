@@ -2,7 +2,27 @@ import json
 import sys
 from logging import ERROR, LogRecord
 
+import pytest
+from app.log.log_types import LogSettings, LogType
 from app.log.logging import JSONFormatter
+
+
+def test_log_settings_read_rs_log_variables(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("rs_log_level", "WARNING")
+    monkeypatch.setenv("rs_log_type", "JSON")
+    monkeypatch.setenv("rs_log_application", "radarsmith-test")
+
+    settings = LogSettings(_env_file=None)  # pyright: ignore[reportCallIssue] -- pydantic-settings init option
+
+    assert settings.log_level == "WARNING"
+    assert settings.log_type == LogType.JSON
+    assert settings.log_application == "radarsmith-test"
+
+
+def test_log_settings_defaults_to_radarsmith_application(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("rs_log_application", raising=False)
+
+    assert LogSettings(_env_file=None).log_application == "radarsmith"  # pyright: ignore[reportCallIssue] -- pydantic-settings init option
 
 
 def test_json_formatter_includes_stack_trace() -> None:
