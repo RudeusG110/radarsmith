@@ -10,7 +10,7 @@ from app.models.models import RadarBlip
 from app.schemas.blip import BlipPatch, BlipPost
 
 
-class BlipService:
+class BlipApi:
     def __init__(self, ctx: AppContext) -> None:
         self.__radar_db = RadarDb(ctx)
         self.__quadrant_db = QuadrantDb(ctx)

@@ -1,5 +1,5 @@
 class DomainError(Exception):
-    """Base class for domain-level errors raised by the authoring services."""
+    """Base class for domain-level errors raised by the authoring workers."""
 
 
 class NotFoundError(DomainError):

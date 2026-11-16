@@ -10,7 +10,7 @@ from app.models.models import Radar
 from app.schemas.radar import RadarPatch, RadarPost, RadarSummaryOut
 
 
-class RadarService:
+class RadarApi:
     def __init__(self, ctx: AppContext) -> None:
         self.__ctx = ctx
         self.__radar_db = RadarDb(ctx)
