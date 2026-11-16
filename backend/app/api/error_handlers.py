@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic_core import ErrorDetails
+from sqlalchemy.exc import IntegrityError
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.domain.exceptions import ConflictError, NotFoundError
@@ -14,6 +15,7 @@ from app.schemas.error import ErrorDetail, ErrorOut
 logger = get_logger()
 
 INTERNAL_ERROR_MESSAGE = "An unexpected error occurred."
+INTEGRITY_ERROR_MESSAGE = "The request conflicts with existing data."
 
 
 def _envelope(status_code: int, code: str, message: str) -> JSONResponse:
@@ -40,6 +42,12 @@ async def _handle_not_found(_: Request, exc: Exception) -> JSONResponse:
 async def _handle_conflict(_: Request, exc: Exception) -> JSONResponse:
     """Return the shared error envelope for a state conflict."""
     return _envelope(HTTPStatus.CONFLICT, "conflict", str(exc))
+
+
+async def _handle_integrity_error(request: Request, exc: Exception) -> JSONResponse:
+    """Return a conflict for a database constraint violation without leaking database details."""
+    logger.warning(f"Integrity error on {request.method} {request.url.path}: {cast(IntegrityError, exc).orig}")
+    return _envelope(HTTPStatus.CONFLICT, "conflict", INTEGRITY_ERROR_MESSAGE)
 
 
 async def _handle_validation_error(_: Request, exc: Exception) -> JSONResponse:
@@ -85,5 +93,6 @@ def register_exception_handlers(app: FastAPI) -> None:
     """Register global exception handlers and the unhandled-error fallback for the FastAPI application."""
     app.add_exception_handler(NotFoundError, _handle_not_found)
     app.add_exception_handler(ConflictError, _handle_conflict)
+    app.add_exception_handler(IntegrityError, _handle_integrity_error)
     app.add_exception_handler(RequestValidationError, _handle_validation_error)
     app.add_middleware(UnhandledErrorMiddleware)

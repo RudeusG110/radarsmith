@@ -1,13 +1,20 @@
 from http import HTTPStatus
-from typing import Any, cast
+from typing import Annotated, Any, cast
 from unittest.mock import patch
 
 from app.api.error_handlers import register_exception_handlers
-from app.context.app_context import AppContext
+from app.api.workers.radar import RadarApi
+from app.context.app_context import AppContext, get_app_context
+from app.context.settings_context import get_settings
+from app.crud.quadrant import QuadrantDb
+from app.domain.enums import QuadrantType
 from app.domain.exceptions import ConflictError
 from app.main import app as main_app
-from fastapi import FastAPI
+from app.schemas.quadrant import QuadrantPost
+from app.schemas.radar import RadarPost
+from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
+from lib.context import Dependencies
 
 MISSING_ID = "c22e9817-d6ff-472a-b5a4-0a521366bb21"
 SENSITIVE_DETAIL = "db-host.internal:5432"
@@ -72,6 +79,30 @@ def test_unhandled_error_returns_internal_error_envelope() -> None:
     assert SENSITIVE_DETAIL not in response.text
     # `exception` logs at ERROR with the active stack trace attached.
     logger.exception.assert_called_once_with("Unhandled error on GET /boom")
+
+
+def test_integrity_error_maps_to_conflict_without_database_details(context: AppContext, dependencies: Dependencies) -> None:
+    app = FastAPI()
+    register_exception_handlers(app)
+    app.dependency_overrides[get_settings] = dependencies.settings_factory
+
+    @app.post("/duplicate-quadrant")
+    def _duplicate_quadrant(  # pyright: ignore[reportUnusedFunction] -- registered as a route handler
+        route_context: Annotated[AppContext, Depends(get_app_context)],
+    ) -> None:
+        radar = RadarApi(route_context).create_radar(RadarPost(name="Integrity"))
+        # Position 1 is already taken by the radar's default structure.
+        QuadrantDb(route_context).create(radar.id, QuadrantPost(name=QuadrantType.TOOLS, position=1))
+
+    with patch("app.api.error_handlers.logger") as logger:
+        response = TestClient(app).post("/duplicate-quadrant")
+
+    assert response.status_code == HTTPStatus.CONFLICT
+    body = cast(dict[str, Any], response.json())
+    assert body == {"error": {"code": "conflict", "message": "The request conflicts with existing data."}}
+    assert "uq_radar_quadrant" not in response.text
+    logger.warning.assert_called_once()
+    assert "uq_radar_quadrant" in logger.warning.call_args.args[0]
 
 
 def test_openapi_declares_shared_error_envelope() -> None:
